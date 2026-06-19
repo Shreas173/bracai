@@ -1,0 +1,1073 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BRAC Student AI Solutions Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=DM+Serif+Display&family=Space+Mono&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: oklch(97% 0.003 85);
+      --surface: oklch(100% 0 0);
+      --fg: oklch(15% 0.015 240);
+      --muted: oklch(48% 0.01 240);
+      --border: oklch(88% 0.005 240);
+      --accent: #EC008C;
+      --accent2: oklch(58% 0.22 248);
+      --success: oklch(55% 0.18 160);
+      --radius: 0;
+      --font: 'Inter', system-ui, sans-serif;
+      --font-display: 'DM Serif Display', Georgia, serif;
+      --font-mono: 'Space Mono', 'Courier New', monospace;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      background-image: 
+        linear-gradient(rgba(0,0,0,0.07) 1.5px, transparent 1.5px),
+        linear-gradient(90deg, rgba(0,0,0,0.07) 1.5px, transparent 1.5px);
+      background-size: 40px 40px;
+      color: var(--fg);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+      border-top: 4px solid oklch(0% 0 0);
+    }
+    body::before {
+      content: ''; position: fixed; top: 4px; left: 0; right: 0;
+      height: 1px; background: oklch(0% 0 0 / 0.06); z-index: 101; pointer-events: none;
+    }
+    ::selection { background: var(--accent); color: oklch(100% 0 0); }
+    a { color: inherit; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent); transition: opacity .2s; }
+    a:hover { color: var(--accent); }
+    a:hover { opacity: .8; }
+    img, svg { display: block; max-width: 100%; }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    .section {
+      padding: 120px 0;
+      border-bottom: 2px solid oklch(0% 0 0 / 0.08);
+    }
+    .section:last-of-type { border-bottom: 0; }
+    .section-alt { border-top: 2px solid oklch(0% 0 0 / 0.06); }
+    .section-label {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .section-alt .section-label { color: var(--accent2); }
+
+    .fade-in {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; }
+    .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .grid-3-econ { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+
+    @media (max-width: 1024px) {
+      .grid-5 { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      .container { padding: 0 20px; }
+      .section { padding: 80px 0; }
+      .grid-2,
+      .grid-3,
+      .grid-3-econ { grid-template-columns: 1fr; gap: 24px; }
+      .grid-5 { grid-template-columns: 1fr 1fr; gap: 12; }
+      .grid-4 { grid-template-columns: 1fr 1fr; gap: 12; }
+    }
+
+    @media (max-width: 480px) {
+      .grid-5 { grid-template-columns: 1fr; }
+      .grid-4 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback, createContext, useContext } = React;
+
+    /* ===== Intersection Observer hook for fade-in ===== */
+    function useFadeIn() {
+      const ref = useRef(null);
+      useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const obs = new IntersectionObserver(
+          ([entry]) => { if (entry.isIntersecting) { entry.target.classList.add('visible'); obs.unobserve(entry.target); } },
+          { threshold: 0.15 }
+        );
+        obs.observe(el);
+        return () => obs.disconnect();
+      }, []);
+      return ref;
+    }
+
+    /* ===== Game of Life ===== */
+    function useGameOfLife(canvasRef, { interval = 2800, fill = 0.18 } = {}) {
+      useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        const parent = canvas.parentElement;
+        let grid = []; let lastTick = 0; let w = 0; let h = 0; let animId;
+        let cols = 0, rows = 0; let beat = 0; const BEAT = 800;
+
+        function reseed(newCols, newRows) {
+          const g = [];
+          for (let r = 0; r < newRows; r++) {
+            g[r] = [];
+            for (let c = 0; c < newCols; c++)
+              g[r][c] = (grid && grid[r % grid.length] && grid[r % grid.length][c % grid[0].length]) || (Math.random() < fill ? 1 : 0);
+          }
+          return g;
+        }
+
+        function nextGen(g, c, r) {
+          const ng = g.map(row => [...row]);
+          for (let r2 = 0; r2 < r; r2++)
+            for (let c2 = 0; c2 < c; c2++) {
+              let n = 0;
+              for (let dr = -1; dr <= 1; dr++)
+                for (let dc = -1; dc <= 1; dc++) {
+                  if (dr === 0 && dc === 0) continue;
+                  n += g[(r2 + dr + r) % r][(c2 + dc + c) % c];
+                }
+              ng[r2][c2] = g[r2][c2] === 1 ? (n < 2 || n > 3 ? 0 : 1) : (n === 3 ? 1 : 0);
+            }
+          return ng;
+        }
+
+        const CSZ = 40;
+
+        function draw() {
+          if (w <= 0 || h <= 0) return;
+          ctx.clearRect(0, 0, w, h);
+          for (let r = 0; r < rows; r++)
+            for (let c = 0; c < cols; c++)
+              if (grid[r][c]) {
+                ctx.fillStyle = beat === 0 ? 'oklch(68% 0.12 248 / 0.22)' : 'oklch(72% 0.08 240 / 0.14)';
+                ctx.fillRect(c * CSZ, r * CSZ, CSZ, CSZ);
+              }
+        }
+
+        function resize() {
+          const rect = parent.getBoundingClientRect();
+          const nw = Math.round(rect.width);
+          const nh = Math.round(rect.height);
+          if (nw <= 0 || nh <= 0) return;
+          const dpr = window.devicePixelRatio || 1;
+          canvas.width = nw * dpr;
+          canvas.height = nh * dpr;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          canvas.style.width = nw + 'px';
+          canvas.style.height = nh + 'px';
+          if (nw === w && nh === h) return;
+          w = nw; h = nh;
+          const nc = Math.max(20, Math.floor(w / CSZ));
+          const nr = Math.max(6, Math.floor(h / CSZ));
+          if (nc !== cols || nr !== rows) {
+            grid = reseed(nc, nr);
+            cols = nc; rows = nr;
+          }
+        }
+
+        function init() {
+          const rect = parent.getBoundingClientRect();
+          w = Math.round(rect.width); h = Math.round(rect.height);
+          cols = Math.max(20, Math.floor(w / CSZ));
+          rows = Math.max(6, Math.floor(h / CSZ));
+          grid = reseed(cols, rows);
+          resize();
+        }
+
+        init();
+
+        const ro = new ResizeObserver(() => { resize(); draw(); });
+        ro.observe(parent);
+
+        function loop(now) {
+          draw();
+          if (now - lastTick >= BEAT) {
+            grid = nextGen(grid, cols, rows);
+            beat = (beat + 1) % 4;
+            draw();
+            lastTick = now;
+          }
+          animId = requestAnimationFrame(loop);
+        }
+
+        animId = requestAnimationFrame(loop);
+        return () => { cancelAnimationFrame(animId); ro.disconnect(); };
+      }, [canvasRef, interval, fill]);
+    }
+
+    /* ===== Three.js Hero ===== */
+    function ThreeHero() {
+      const ref = useRef(null);
+      useEffect(() => {
+        if (typeof THREE === 'undefined') return;
+        const el = ref.current;
+        if (!el || el.clientWidth <= 0) return;
+        const w = el.clientWidth, h = el.clientHeight;
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 100);
+        camera.position.z = 6;
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(w, h);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(0x000000, 0);
+        el.appendChild(renderer.domElement);
+        const pc = 80; const pp = new Float32Array(pc * 3);
+        for (let i = 0; i < pc * 3; i++) pp[i] = (Math.random() - 0.5) * 14;
+        const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pp, 3));
+        const colors = new Float32Array(pc * 3);
+        for (let i = 0; i < pc; i++) {
+          const c = Math.random() > 0.4 ? [0.22, 0.42, 0.96] : [0.88, 0, 0.55];
+          colors[i*3] = c[0]; colors[i*3+1] = c[1]; colors[i*3+2] = c[2];
+        }
+        pg.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        const pm = new THREE.PointsMaterial({ size: 0.015, transparent: true, opacity: 0.045, vertexColors: true, depthWrite: false, blending: THREE.AdditiveBlending });
+        const pts = new THREE.Points(pg, pm);
+        scene.add(pts);
+        let id; let t = 0;
+        function tick() {
+          id = requestAnimationFrame(tick);
+          t += 0.003;
+          pts.rotation.y = Math.sin(t * 0.15) * 0.04;
+          pts.rotation.x = Math.sin(t * 0.1) * 0.02;
+          renderer.render(scene, camera);
+        }
+        tick();
+        const ro = new ResizeObserver(() => { const nw = el.clientWidth, nh = el.clientHeight; if (nw > 0) { camera.aspect = nw / nh; camera.updateProjectionMatrix(); renderer.setSize(nw, nh); } });
+        ro.observe(el);
+        return () => { cancelAnimationFrame(id); renderer.dispose(); pg.dispose(); pm.dispose(); ro.disconnect(); };
+      }, []);
+      return <div ref={ref} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }} />;
+    }
+
+    /* ===== Artworks ===== */
+    function HeroArt() {
+      return (
+        <svg aria-hidden="true" viewBox="0 0 1200 800" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.12 }}>
+          <defs>
+            <linearGradient id="hg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#EC008C"/><stop offset="100%" stopColor="oklch(55% 0.16 250)"/></linearGradient>
+            <linearGradient id="hg2" x1="1" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="oklch(55% 0.16 250)"/><stop offset="100%" stopColor="color-mix(in srgb, #EC008C 50%, transparent)"/></linearGradient>
+            <linearGradient id="curvePink" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="#EC008C" stopOpacity="0"/><stop offset="50%" stopColor="#EC008C" stopOpacity="0.5"/><stop offset="100%" stopColor="#EC008C" stopOpacity="0"/></linearGradient>
+            <linearGradient id="curveBlue" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="oklch(55% 0.16 250)" stopOpacity="0"/><stop offset="50%" stopColor="oklch(55% 0.16 250)" stopOpacity="0.5"/><stop offset="100%" stopColor="oklch(55% 0.16 250)" stopOpacity="0"/></linearGradient>
+          </defs>
+          <path d="M-40,340 C200,140 400,540 640,340" fill="none" stroke="url(#curveBlue)" strokeWidth="2" />
+          <path d="M1240,340 C1000,140 800,540 560,340" fill="none" stroke="url(#curveBlue)" strokeWidth="2" />
+          <path d="M-40,620 C260,420 480,200 640,340" fill="none" stroke="url(#curvePink)" strokeWidth="2" />
+          <path d="M1240,620 C940,420 720,200 560,340" fill="none" stroke="url(#curvePink)" strokeWidth="2" />
+          <circle cx="200" cy="150" r="320" fill="url(#hg1)" opacity="0.15" />
+          <circle cx="1000" cy="600" r="280" fill="url(#hg2)" opacity="0.1" />
+          <circle cx="600" cy="400" r="200" fill="none" stroke="#EC008C" strokeWidth="0.5" opacity="0.08" strokeDasharray="8 16" />
+          <circle cx="600" cy="400" r="280" fill="none" stroke="oklch(55% 0.16 250)" strokeWidth="0.5" opacity="0.06" strokeDasharray="4 20" />
+          <circle cx="600" cy="400" r="360" fill="none" stroke="#EC008C" strokeWidth="0.3" opacity="0.04" />
+          {[...Array(10)].map((_,i) => (
+            <line key={i} x1={100 + i * 120} y1={Math.sin(i*0.7)*60 + 300} x2={100 + i * 120} y2={700} stroke={i % 2 === 0 ? '#EC008C' : 'oklch(55% 0.16 250)'} strokeWidth="0.3" opacity={0.03 + i * 0.004} />
+          ))}
+        </svg>
+      );
+    }
+
+    function AboutArt() {
+      return (
+        <svg aria-hidden="true" viewBox="0 0 960 400" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.08 }}>
+          {[0,1,2].map(l => (
+            <g key={l} opacity={0.08 - l * 0.02}>
+              <circle cx={240 + l * 340} cy={120 + l * 50} r={60} fill="none" stroke="oklch(55% 0.16 250)" strokeWidth="0.4" />
+              <circle cx={240 + l * 340} cy={120 + l * 50} r={25} fill="#EC008C" opacity="0.05" />
+            </g>
+          ))}
+          {[120, 280, 440, 600, 760, 920].map((x,i) => (
+            <line key={i} x1={x} y1={0} x2={x - 40 + Math.sin(i)*20} y2={400} stroke="oklch(55% 0.16 250)" strokeWidth="0.2" opacity={0.02 + i * 0.006} />
+          ))}
+          <path d="M0 200 Q240 100 480 220 T960 160" fill="none" stroke="#EC008C" strokeWidth="0.3" opacity="0.04" />
+        </svg>
+      );
+    }
+
+    function StructureArt() {
+      return (
+        <svg aria-hidden="true" viewBox="0 0 960 500" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.07 }}>
+          {[0,1,2].map(i => (
+            <g key={i}>
+              <polygon points={`${250 + i*250},30 ${280 + i*250},80 ${250 + i*250},130 ${220 + i*250},80`} fill="none" stroke={i===1 ? '#EC008C' : 'oklch(55% 0.16 250)'} strokeWidth="0.4" opacity={0.06} />
+              <polygon points={`${250 + i*250},80 ${270 + i*250},180 ${250 + i*250},280 ${230 + i*250},180`} fill="none" stroke={i===1 ? 'oklch(55% 0.16 250)' : '#EC008C'} strokeWidth="0.3" opacity={0.04} />
+            </g>
+          ))}
+          {[0,1,2,3,4].map(i => (
+            <circle key={i} cx={160 + i * 160} cy={350 + Math.sin(i*1.2)*40} r={3 + i} fill={i % 2 === 0 ? '#EC008C' : 'oklch(55% 0.16 250)'} opacity={0.04} />
+          ))}
+        </svg>
+      );
+    }
+
+    function EconomicsArt() {
+      return (
+        <svg aria-hidden="true" viewBox="0 0 960 400" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.08 }}>
+          {[0,1,2,3,4].map(i => (
+            <g key={i} opacity={0.06 - i * 0.01}>
+              <rect x={100 + i * 180} y={300 - i * 50} width={60} height={i * 50 + 20} fill="none" stroke={i % 2 === 0 ? '#EC008C' : 'oklch(55% 0.16 250)'} strokeWidth="0.3" />
+            </g>
+          ))}
+          <path d="M0 320 Q240 240 480 280 T960 200" fill="none" stroke="#EC008C" strokeWidth="0.3" opacity="0.03" />
+          <path d="M0 340 Q240 280 480 300 T960 240" fill="none" stroke="oklch(55% 0.16 250)" strokeWidth="0.2" opacity="0.02" />
+        </svg>
+      );
+    }
+
+    function TimelineArt() {
+      return (
+        <svg aria-hidden="true" viewBox="0 0 960 300" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.06 }}>
+          <path d="M-40 150 Q240 60 480 140 T1000 100" fill="none" stroke="#EC008C" strokeWidth="0.3" opacity="0.05" />
+          <path d="M-40 160 Q240 80 480 160 T1000 120" fill="none" stroke="oklch(55% 0.16 250)" strokeWidth="0.2" opacity="0.03" />
+          {[80, 280, 480, 680, 880].map((x,i) => (
+            <g key={i}>
+              <line x1={x} y1={100 - i * 5} x2={x} y2={200 + i * 8} stroke={i % 2 === 0 ? '#EC008C' : 'oklch(55% 0.16 250)'} strokeWidth="0.2" opacity={0.02 + i * 0.005} />
+              <circle cx={x} cy={80 + i * 10} r={2} fill={i % 2 === 0 ? '#EC008C' : 'oklch(55% 0.16 250)'} opacity={0.04} />
+            </g>
+          ))}
+        </svg>
+      );
+    }
+
+    /* ===== Hero ===== */
+    function Hero() {
+      const canvasRef = useRef(null);
+      useGameOfLife(canvasRef, { interval: 3000, fill: 0.15 });
+      const fadeRef = useFadeIn();
+
+      return (
+        <section id="hero" style={heroSection}>
+          <ThreeHero />
+          <canvas ref={canvasRef} style={heroCanvas} />
+          <div style={heroOverlay} />
+          <HeroArt />
+          <div ref={fadeRef} className="fade-in" style={heroContent}>
+            <div style={heroTagline}>BRAC</div>
+            <h1 style={heroTitle}>
+              Student AI<br />Solutions Lab
+            </h1>
+            <p style={heroSub}>
+              Top Bangladeshi undergraduate engineers building real AI products for BRAC — mentored by senior ML practitioners.
+            </p>
+            <div style={heroCtaRow}>
+              <a href="#about" style={heroCta}>Explore the lab</a>
+              <span style={heroStat}>Launching Q3 2026</span>
+            </div>
+          </div>
+          <div style={scrollHint}>Scroll to explore</div>
+        </section>
+      );
+    }
+
+    /* ===== About ===== */
+    function About() {
+      const ref1 = useFadeIn();
+      const ref2 = useFadeIn();
+      return (
+        <section id="about" className="section" style={{...sectionAlt, position: 'relative', overflow: 'hidden'}}>
+          <svg aria-hidden="true" viewBox="0 0 960 400" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.04 }}>
+            <path d="M0,200 Q240,60 480,220 T960,120" fill="none" stroke="var(--accent2)" strokeWidth="0.5" />
+            <path d="M0,240 Q240,100 480,260 T960,160" fill="none" stroke="var(--accent)" strokeWidth="0.3" opacity="0.6" />
+          </svg>
+          <AboutArt />
+          <div className="container">
+            <span className="section-label">About</span>
+            <div className="grid-2" style={{ gap: '64px', marginTop: 40 }}>
+              <div ref={ref1} className="fade-in" style={aboutQuote}>
+                <div style={aboutMark}>"</div>
+                <p style={aboutText}>
+                  BRAC operates at a scale where AI isn't optional — it's infrastructure. Yet the talent building that future is mostly outside Bangladesh.
+                </p>
+                <div style={aboutAttribution}>— The gap BRAC faces</div>
+              </div>
+              <div ref={ref2} className="fade-in" style={aboutQuote}>
+                <div style={aboutMark}>"</div>
+                <p style={aboutText}>
+                  Bangladesh produces some of the sharpest undergraduate engineers in the world. What they lack isn't ability — it's structured access to real ML product work.
+                </p>
+                <div style={aboutAttribution}>— The gap students face</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    /* ===== Program Structure ===== */
+    const roles = [
+      {
+        title: 'Mentors',
+        subtitle: 'Senior ML Engineers',
+        desc: 'Industry practitioners who design project specs, review code, and run weekly tech deep-dives. Each mentor owns 1–2 project teams.',
+        icon: MdiAccountGroup,
+      },
+      {
+        title: 'Student Fellows',
+        subtitle: 'Undergraduate Engineers',
+        desc: 'Top-tier Bangladeshi CS/ECE undergrads selected through a competitive application. Fellows own real product components end-to-end.',
+        icon: MdiSchool,
+      },
+      {
+        title: 'Project Manager',
+        subtitle: 'Program Coordination',
+        desc: 'A dedicated PM bridges BRAC\'s domain experts with the engineering teams — translating NGO needs into technical specs and milestones.',
+        icon: MdiClipboard,
+      },
+    ];
+
+    function ProgramStructure() {
+      const ref = useFadeIn();
+      return (
+        <section id="structure" className="section" style={{ position: 'relative', overflow: 'hidden' }}>
+          <svg aria-hidden="true" viewBox="0 0 960 500" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.035 }}>
+            {[0,1,2].map(i => (
+              <path key={i} d={`M${100+i*60},${120+i*40} C${300+i*40},${50+i*30} ${500+i*20},${200+i*20} ${700+i*30},${100+i*50}`} fill="none" stroke={i % 2 === 0 ? 'var(--accent)' : 'var(--accent2)'} strokeWidth="0.3" opacity={0.5 - i*0.1} />
+            ))}
+          </svg>
+          <StructureArt />
+          <div className="container">
+            <span className="section-label">Program Structure</span>
+            <h2 style={sectionTitle}>Three roles, one mission</h2>
+            <div ref={ref} className="fade-in grid-3">
+              {roles.map((r, i) => (
+                <div key={i} style={roleCard}>
+                  <div style={roleIconWrap}><r.icon size={24} color="var(--accent)" /></div>
+                  <h3 style={roleTitle}>{r.title}</h3>
+                  <div style={roleSub}>{r.subtitle}</div>
+                  <p style={roleDesc}>{r.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    /* ===== Initial Cohort ===== */
+    const projects = [
+      { title: 'Crop Health Classifier', status: 'Active', progress: 65 },
+      { title: 'Microfinance Risk Model', status: 'Active', progress: 42 },
+      { title: 'Bengali NLP Pipeline', status: 'Active', progress: 78 },
+      { title: 'Supply Chain Optimizer', status: 'Active', progress: 31 },
+      { title: 'Community Health Bot', status: 'Active', progress: 55 },
+    ];
+
+    function InitialCohort() {
+      const ref = useFadeIn();
+      return (
+        <section id="cohort" className="section" style={sectionAlt}>
+          <div className="container">
+            <span className="section-label" style={{ color: 'var(--accent2)' }}>Initial Cohort</span>
+            <h2 style={sectionTitle}>5 projects, summer 2026</h2>
+            <div ref={ref} className="fade-in grid-5">
+              {projects.map((p, i) => (
+                <div key={i} style={projectCard}>
+                  <div style={projectIconBox}>
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.5">
+                      <rect x="4" y="4" width="24" height="24" rx="4" />
+                      <path d="M4 12h24" />
+                      <path d="M12 4v24" />
+                    </svg>
+                  </div>
+                  <h3 style={projectTitle}>{p.title}</h3>
+                  <div style={projectStatusRow}>
+                    <span style={projectStatusBadge}>{p.status}</span>
+                  </div>
+                  <div style={progressTrack}>
+                    <div style={{ ...progressFill, width: p.progress + '%' }} />
+                  </div>
+                  <span style={progressLabel}>{p.progress}% complete</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    /* ===== Economics ===== */
+    const economicsItems = [
+      { label: 'Monthly stipend', value: 'BDT 30,000', detail: 'per fellow', bar: 85 },
+      { label: 'Tooling budget', value: '$200 /mo', detail: 'per team (API credits, compute)', bar: 60 },
+      { label: 'API usage', value: '~500K calls', detail: 'monthly across all projects', bar: 45 },
+    ];
+
+    function Economics() {
+      const ref = useFadeIn();
+      return (
+        <section id="economics" className="section" style={{ position: 'relative', overflow: 'hidden' }}>
+          <svg aria-hidden="true" viewBox="0 0 960 400" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.04 }}>
+            <path d="M0,280 Q240,80 480,180 T960,60" fill="none" stroke="var(--accent2)" strokeWidth="0.5" />
+            <path d="M0,300 Q240,120 480,210 T960,100" fill="none" stroke="var(--accent)" strokeWidth="0.3" opacity="0.5" />
+          </svg>
+          <EconomicsArt />
+          <div className="container">
+            <span className="section-label" style={{ color: 'var(--accent2)' }}>Economics</span>
+            <h2 style={sectionTitle}>Investing in talent</h2>
+            <div ref={ref} className="fade-in grid-3-econ">
+              {economicsItems.map((item, i) => (
+                <div key={i} style={econCard}>
+                  <div style={econValue}>{item.value}</div>
+                  <div style={econLabel}>{item.label}</div>
+                  <div style={econDetail}>{item.detail}</div>
+                  <div style={econBarTrack}>
+                    <div style={{ ...econBarFill, width: item.bar + '%' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    /* ===== Timeline ===== */
+    const milestones = [
+      { date: 'Q3 2026', label: 'Program launch', active: true },
+      { date: 'Q4 2026', label: 'First project review', active: false },
+      { date: 'Q1 2027', label: 'Mid-point demo', active: false },
+      { date: 'Q2 2027', label: 'Final showcase', active: false },
+    ];
+
+    function Timeline() {
+      const ref = useFadeIn();
+      return (
+        <section id="timeline" className="section" style={{...sectionAlt, position: 'relative', overflow: 'hidden'}}>
+          <svg aria-hidden="true" viewBox="0 0 960 300" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.035 }}>
+            <path d="M0,120 C200,40 300,180 480,100 S700,200 960,100" fill="none" stroke="var(--accent2)" strokeWidth="0.4" />
+            <path d="M0,140 C200,60 300,200 480,120 S700,220 960,120" fill="none" stroke="var(--accent)" strokeWidth="0.2" opacity="0.6" />
+          </svg>
+          <TimelineArt />
+          <div className="container">
+            <span className="section-label">Timeline</span>
+            <h2 style={sectionTitle}>What's ahead</h2>
+            <div ref={ref} className="fade-in" style={timelineWrap}>
+              <div style={timelineLine} />
+              <div className="grid-4">
+                {milestones.map((m, i) => (
+                  <div key={i} style={timelineItem}>
+                    <div style={{ ...timelineDot, background: m.active ? 'var(--accent)' : 'color-mix(in srgb, var(--accent2) 30%, transparent)' }} />
+                    <div style={timelineDate}>{m.date}</div>
+                    <div style={timelineLabel}>{m.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    /* ===== Footer ===== */
+    function Footer() {
+      return (
+        <footer style={footerStyle}>
+          <div className="container" style={footerInner}>
+            <h2 style={footerTitle}>Want to learn more?</h2>
+            <p style={footerText}>
+              We're looking for partners, mentors, and sponsors who share our vision of building AI talent in Bangladesh.
+            </p>
+            <a href="mailto:ai-lab@brac.net" style={footerCta}>Contact us</a>
+            <div style={footerDivider} />
+            <div style={footerBottom}>
+              <span style={footerCopy}>&copy; 2026 BRAC</span>
+              <span style={footerCopy}>Student AI Solutions Lab</span>
+            </div>
+          </div>
+        </footer>
+      );
+    }
+
+    /* ===== Simple SVG Icons ===== */
+    function MdiAccountGroup({ size = 24, color = 'currentColor' }) {
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="9" cy="7" r="3" />
+          <circle cx="17" cy="8" r="2.5" />
+          <path d="M3 18c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+          <path d="M15 18c0-2.5 2-4.5 4.5-4.5S24 15.5 24 18" />
+        </svg>
+      );
+    }
+    function MdiSchool({ size = 24, color = 'currentColor' }) {
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 2L2 7l10 5 10-5-10-5z" />
+          <path d="M2 17l10 5 10-5" />
+          <path d="M2 12l10 5 10-5" />
+        </svg>
+      );
+    }
+    function MdiClipboard({ size = 24, color = 'currentColor' }) {
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="4" y="3" width="16" height="18" rx="2" />
+          <path d="M9 3a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2" />
+          <path d="M8 11h8" />
+          <path d="M8 15h6" />
+          <path d="M8 7h8" />
+        </svg>
+      );
+    }
+
+    /* ===== Style objects ===== */
+
+    const heroSection = {
+      position: 'relative',
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+      padding: '40px 32px',
+    };
+
+    const heroCanvas = {
+      position: 'absolute',
+      inset: 0,
+      width: '100%',
+      height: '100%',
+      pointerEvents: 'none',
+    };
+
+    const heroOverlay = {
+      position: 'absolute',
+      inset: 0,
+      background: `linear-gradient(180deg, oklch(100% 0 0 / 0.5) 0%, transparent 50%, transparent 100%)`,
+    };
+
+    const heroContent = {
+      position: 'relative',
+      zIndex: 2,
+      textAlign: 'center',
+      maxWidth: 800,
+    };
+
+    const heroTagline = {
+      fontFamily: 'var(--font-mono)',
+      fontSize: 13,
+      fontWeight: 400,
+      letterSpacing: '0.12em',
+      textTransform: 'uppercase',
+      color: 'var(--accent)',
+      marginBottom: 20,
+    };
+
+    const heroTitle = {
+      fontFamily: 'var(--font-display)',
+      fontSize: 'clamp(64px, 12vw, 120px)',
+      fontWeight: 400,
+      lineHeight: 1.0,
+      letterSpacing: '-0.02em',
+      marginBottom: 24,
+    };
+
+    const heroSub = {
+      fontSize: 'clamp(18px, 2vw, 22px)',
+      fontWeight: 350,
+      lineHeight: 1.5,
+      color: 'var(--muted)',
+      maxWidth: 560,
+      margin: '0 auto 40px',
+    };
+
+    const heroCtaRow = {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 28,
+      flexWrap: 'wrap',
+    };
+
+    const heroCta = {
+      display: 'inline-block',
+      padding: '14px 36px',
+      borderRadius: 999,
+      background: 'var(--accent)',
+      color: '#fff',
+      fontFamily: 'var(--font-mono)',
+      fontSize: 13,
+      fontWeight: 400,
+      letterSpacing: '0.08em',
+      textTransform: 'uppercase',
+      transition: 'opacity .2s, transform .2s',
+    };
+
+    const heroStat = {
+      fontFamily: 'var(--font-mono)',
+      fontSize: 13,
+      fontWeight: 400,
+      color: 'var(--muted)',
+      letterSpacing: '0.08em',
+    };
+
+    const scrollHint = {
+      position: 'absolute',
+      bottom: 32,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      fontSize: 11,
+      letterSpacing: '0.15em',
+      textTransform: 'uppercase',
+      color: 'var(--muted)',
+      opacity: 0.4,
+      zIndex: 2,
+    };
+
+    const sectionAlt = {
+      background: 'var(--surface)',
+    };
+
+    const aboutQuote = {
+      padding: '40px 0',
+    };
+
+    const aboutMark = {
+      fontSize: 80,
+      fontWeight: 300,
+      lineHeight: 0.6,
+      color: 'var(--accent)',
+      opacity: 0.3,
+      marginBottom: 12,
+    };
+
+    const aboutText = {
+      fontFamily: 'var(--font-display)',
+      fontSize: 'clamp(24px, 3vw, 31px)',
+      fontWeight: 400,
+      lineHeight: 1.15,
+      letterSpacing: '-0.01em',
+      color: 'var(--fg)',
+      marginBottom: 16,
+    };
+
+    const aboutAttribution = {
+      fontFamily: 'var(--font-mono)',
+      fontSize: 13,
+      fontWeight: 400,
+      letterSpacing: '0.08em',
+      textTransform: 'uppercase',
+      color: 'var(--muted)',
+    };
+
+    const sectionTitle = {
+      fontFamily: 'var(--font-display)',
+      fontSize: 'clamp(28px, 3.5vw, 40px)',
+      fontWeight: 400,
+      letterSpacing: '-0.02em',
+      lineHeight: 1.1,
+      marginBottom: 48,
+    };
+
+    const roleCard = {
+      background: 'var(--bg)',
+      borderRadius: 'var(--radius)',
+      padding: 40,
+      border: '0.5px solid oklch(0% 0 0 / 0.1)',
+      transition: 'border-color .3s, transform .3s',
+    };
+
+    const roleIconWrap = {
+      width: 48,
+      height: 48,
+      borderRadius: 12,
+      background: 'color-mix(in srgb, var(--accent2) 10%, transparent)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 20,
+    };
+
+    const roleTitle = {
+      fontFamily: 'var(--font-display)',
+      fontSize: 22,
+      fontWeight: 400,
+      letterSpacing: '-0.01em',
+      marginBottom: 4,
+    };
+
+    const roleSub = {
+      fontFamily: 'var(--font-mono)',
+      fontSize: 13,
+      fontWeight: 400,
+      color: 'var(--accent)',
+      letterSpacing: '0.08em',
+      textTransform: 'uppercase',
+      marginBottom: 16,
+    };
+
+    const roleDesc = {
+      fontSize: 15,
+      fontWeight: 350,
+      lineHeight: 1.6,
+      color: 'var(--muted)',
+    };
+
+    const projectCard = {
+      background: 'var(--bg)',
+      borderRadius: 'var(--radius)',
+      padding: 28,
+      border: '0.5px solid oklch(0% 0 0 / 0.1)',
+    };
+
+    const projectIconBox = {
+      width: 48,
+      height: 48,
+      borderRadius: 12,
+      background: 'color-mix(in srgb, var(--accent2) 8%, transparent)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: 'var(--accent)',
+      marginBottom: 16,
+    };
+
+    const projectTitle = {
+      fontSize: 15,
+      fontWeight: 510,
+      letterSpacing: '-0.01em',
+      marginBottom: 12,
+    };
+
+    const projectStatusRow = {
+      marginBottom: 16,
+    };
+
+    const projectStatusBadge = {
+      display: 'inline-block',
+      padding: '2px 10px',
+      borderRadius: 999,
+      fontSize: 11,
+      fontWeight: 510,
+      letterSpacing: '0.04em',
+      textTransform: 'uppercase',
+      background: 'oklch(65% 0.15 160 / 0.12)',
+      color: 'var(--success)',
+    };
+
+    const progressTrack = {
+      width: '100%',
+      height: 3,
+      borderRadius: 2,
+      background: 'oklch(0% 0 0 / 0.08)',
+      marginBottom: 6,
+      overflow: 'hidden',
+    };
+
+    const progressFill = {
+      height: '100%',
+      background: 'linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%)',
+      borderRadius: 2,
+      transition: 'width .6s ease',
+    };
+
+    const progressLabel = {
+      fontSize: 11,
+      letterSpacing: '0.03em',
+      color: 'var(--muted)',
+    };
+
+    const econCard = {
+      background: 'var(--bg)',
+      borderRadius: 'var(--radius)',
+      padding: 40,
+      border: '0.5px solid oklch(0% 0 0 / 0.1)',
+    };
+
+    const econValue = {
+      fontSize: 'clamp(28px, 3vw, 36px)',
+      fontWeight: 620,
+      letterSpacing: '-0.02em',
+      marginBottom: 4,
+    };
+
+    const econLabel = {
+      fontSize: 14,
+      fontWeight: 510,
+      letterSpacing: '0.03em',
+      textTransform: 'uppercase',
+      color: 'var(--muted)',
+      marginBottom: 8,
+    };
+
+    const econDetail = {
+      fontSize: 14,
+      color: 'var(--muted)',
+      fontWeight: 350,
+      marginBottom: 20,
+    };
+
+    const econBarTrack = {
+      width: '100%',
+      height: 6,
+      borderRadius: 3,
+      background: 'oklch(0% 0 0 / 0.08)',
+      overflow: 'hidden',
+    };
+
+    const econBarFill = {
+      height: '100%',
+      borderRadius: 3,
+      background: 'var(--accent2)',
+      opacity: 0.7,
+    };
+
+    const timelineWrap = {
+      position: 'relative',
+      paddingTop: 40,
+    };
+
+    const timelineLine = {
+      position: 'absolute',
+      top: 80,
+      left: '10%',
+      right: '10%',
+      height: 1.5,
+      background: 'oklch(0% 0 0 / 0.1)',
+    };
+
+    const timelineItem = {
+      textAlign: 'center',
+      paddingTop: 20,
+    };
+
+    const timelineDot = {
+      width: 14,
+      height: 14,
+      borderRadius: '50%',
+      margin: '0 auto 20px',
+    };
+
+    const timelineDate = {
+      fontFamily: 'var(--font-mono)',
+      fontSize: 13,
+      fontWeight: 400,
+      letterSpacing: '0.04em',
+      textTransform: 'uppercase',
+      marginBottom: 6,
+    };
+
+    const timelineLabel = {
+      fontFamily: 'var(--font)',
+      fontSize: 14,
+      color: 'var(--muted)',
+      fontWeight: 350,
+    };
+
+    const footerStyle = {
+      padding: '100px 0 40px',
+      background: 'var(--surface)',
+      borderTop: '2px solid oklch(0% 0 0 / 0.1)',
+    };
+
+    const footerInner = {
+      textAlign: 'center',
+    };
+
+    const footerTitle = {
+      fontFamily: 'var(--font-display)',
+      fontSize: 'clamp(30px, 4vw, 48px)',
+      fontWeight: 400,
+      letterSpacing: '-0.02em',
+      marginBottom: 20,
+    };
+
+    const footerText = {
+      fontSize: 16,
+      fontWeight: 350,
+      color: 'var(--muted)',
+      maxWidth: 480,
+      margin: '0 auto 36px',
+      lineHeight: 1.6,
+    };
+
+    const footerCta = {
+      display: 'inline-block',
+      padding: '14px 40px',
+      borderRadius: 999,
+      background: 'var(--accent)',
+      color: '#fff',
+      fontSize: 15,
+      fontWeight: 510,
+      letterSpacing: '0.02em',
+      transition: 'opacity .2s',
+    };
+
+    const footerDivider = {
+      height: 1.5,
+      background: 'oklch(0% 0 0 / 0.08)',
+      margin: '60px 0 24px',
+    };
+
+    const footerBottom = {
+      display: 'flex',
+      justifyContent: 'center',
+      gap: 32,
+    };
+
+    const footerCopy = {
+      fontFamily: 'var(--font-mono)',
+      fontSize: 13,
+      fontWeight: 400,
+      letterSpacing: '0.06em',
+      color: 'var(--muted)',
+    };
+
+    /* ===== App ===== */
+    function App() {
+      return (
+        <>
+          <Hero />
+          <About />
+          <ProgramStructure />
+          <InitialCohort />
+          <Economics />
+          <Timeline />
+          <Footer />
+        </>
+      );
+    }
+
+    /* ===== Mount ===== */
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
