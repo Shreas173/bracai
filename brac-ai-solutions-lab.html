@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BRAC Student AI Solutions Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;350;400;510;600;650&family=DM+Serif+Display&family=Space+Mono&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: oklch(97% 0.003 85);
+      --fg: oklch(15% 0.015 240);
+      --muted: oklch(48% 0.01 240);
+      --accent: #EC008C;
+      --accent2: oklch(58% 0.22 248);
+      --font: 'Inter', system-ui, sans-serif;
+      --font-display: 'DM Serif Display', Georgia, serif;
+      --font-mono: 'Space Mono', 'Courier New', monospace;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      background-image: 
+        linear-gradient(rgba(0,0,0,0.07) 1.5px, transparent 1.5px),
+        linear-gradient(90deg, rgba(0,0,0,0.07) 1.5px, transparent 1.5px);
+      background-size: 40px 40px;
+      color: var(--fg);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      border-top: 4px solid oklch(0% 0 0);
+    }
+    body::before {
+      content: ''; position: fixed; top: 4px; left: 0; right: 0;
+      height: 1px; background: oklch(0% 0 0 / 0.06); z-index: 101; pointer-events: none;
+    }
+    ::selection { background: var(--accent); color: oklch(100% 0 0); }
+    a { color: inherit; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+    a:hover { color: var(--accent); }
+    .container { max-width: 960px; margin: 0 auto; padding: 0 32px; }
+    .section { padding: 140px 0; scroll-margin-top: 56px; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+    .reveal { opacity: 0; transform: translateY(40px); transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1); }
+    .reveal.revealed { opacity: 1; transform: translateY(0); }
+    .scroll-chevron {
+      position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+      width: 24px; height: 40px;       border: 1.5px solid oklch(15% 0.015 240 / 0.15); border-radius: 12px;
+      display: flex; align-items: flex-start; justify-content: center; padding-top: 8px;
+      animation: fadeBounce 3s ease-in-out infinite; pointer-events: none;
+    }
+    .scroll-chevron::after {
+      content: ''; display: block;
+      width: 3px; height: 10px; border-radius: 2px; background: var(--accent2);
+      animation: scrollDot 3s ease-in-out infinite;
+    }
+    @keyframes fadeBounce { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
+    @keyframes scrollDot {
+      0%, 100% { transform: translateY(0); opacity: 0.3; }
+      50% { transform: translateY(8px); opacity: 1; }
+    }
+    .scroll-chevron:hover::after { opacity: 1; }
+    @keyframes ambientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes slideUp {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    @keyframes breathe {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+    @keyframes breatheBlue {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.95; }
+    }
+
+    html { scroll-padding-top: 64px; }
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: oklch(100% 0 0 / 0.85);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1.5px solid oklch(0% 0 0 / 0.12);
+      animation: navEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    @keyframes navEnter {
+      from { transform: translateY(-100%); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+    .nav-inner {
+      max-width: 960px; margin: 0 auto; padding: 0 32px;
+      display: flex; align-items: center; gap: 32px; height: 56px;
+    }
+    .nav-link {
+      font-family: var(--font-mono); font-size: 13px; font-weight: 400; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--muted); text-decoration: none; transition: color 0.2s;
+      position: relative;
+    }
+    .nav-link:hover { color: var(--accent); text-decoration-color: var(--accent2); }
+    .nav-link.active { color: var(--fg); }
+    .nav-link.active::after {
+      content: ''; position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
+      width: 5px; height: 5px; border-radius: 50%;
+    }
+    .nav-link.active.blue::after { background: var(--accent2); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent2) 18%, transparent); }
+    .nav-link.active.pink::after { background: var(--accent); }
+    .nav-brand {
+      font-family: var(--font-display); font-size: 18px; font-weight: 400; letter-spacing: 0em;
+      color: color-mix(in srgb, var(--fg) 60%, var(--accent2));
+      margin-right: auto;
+    }
+    .nav-brand:hover { color: var(--accent2); }
+
+    .progress-bar {
+      position: fixed; top: 0; left: 0; height: 1px; z-index: 200;
+      background: linear-gradient(90deg, var(--accent) 0%, var(--accent) 40%, var(--accent2) 100%);
+      transition: width 0.1s linear;
+    }
+
+    .hero-entrance { opacity: 0; animation: slideUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    .hero-entrance:nth-child(1) { animation-delay: 0.1s; }
+    .hero-entrance:nth-child(2) { animation-delay: 0.25s; }
+    .hero-entrance:nth-child(3) { animation-delay: 0.45s; }
+
+    .shimmer-text {
+      background: linear-gradient(90deg, var(--fg) 0%, var(--fg) 30%, var(--accent2) 45%, var(--accent2) 55%, var(--fg) 70%, var(--fg) 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 6s ease-in-out infinite;
+    }
+
+    .card {
+      position: relative;
+      padding: 32px;
+      border-radius: 0;
+      cursor: default;
+      transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 40px -12px oklch(0% 0 0 / 0.08),
+                  0 0 0 1px color-mix(in srgb, var(--accent2) 8%, transparent);
+    }
+    .card .card-hover-reveal {
+      transition: opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+      opacity: 0.5;
+    }
+    .card:hover .card-hover-reveal {
+      opacity: 1;
+    }
+    @media (pointer: coarse) {
+      .card:active .card-hover-reveal { opacity: 1; }
+    }
+
+    .pkg-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 40px; }
+    .pkg-card {
+      position: relative;
+      background: oklch(100% 0 0);
+      border: 0.5px solid oklch(0% 0 0 / 0.1);
+      padding: 28px;
+      display: flex; gap: 16px; align-items: flex-start;
+      transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
+      will-change: transform; cursor: default;
+    }
+    .pkg-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px -12px oklch(0% 0 0 / 0.08),
+                  0 0 0 1px color-mix(in srgb, var(--accent2) 10%, transparent);
+    }
+    .pkg-icon { width: 28px; height: 28px; flex-shrink: 0; color: var(--accent2); margin-top: 1px; }
+    .pkg-title { font-family: var(--font-display); font-size: 18px; font-weight: 400; letter-spacing: 0em; margin-bottom: 4px; }
+    .pkg-desc { font-size: 16px; font-weight: 400; color: var(--muted); line-height: 1.55; letter-spacing: 0.01em; }
+
+    .timeline { position: relative; display: flex; justify-content: space-between; padding: 40px 0 0; }
+    .timeline::before {
+      content: ''; position: absolute; top: 48px; left: 0; right: 0;
+      height: 1px; background: oklch(0% 0 0 / 0.12);
+    }
+    .tl-item { display: flex; flex-direction: column; align-items: center; position: relative; flex: 1; }
+    .tl-dot {
+      width: 10px; height: 10px; border-radius: 50%; background: oklch(0% 0 0 / 0.12);
+      margin-bottom: 16px; position: relative; z-index: 2; transition: background 0.3s;
+    }
+    .tl-dot.blue { background: var(--accent2); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent2) 25%, transparent); }
+    .tl-dot.blue::after {
+      content: ''; position: absolute; inset: -5px; border-radius: 50%;
+      border: 1px solid color-mix(in srgb, var(--accent2) 25%, transparent);
+      animation: tlPulse 2.5s ease-in-out infinite;
+    }
+    .tl-dot.active { background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent); }
+    .tl-dot.active::after {
+      content: ''; position: absolute; inset: -6px; border-radius: 50%;
+      border: 1.5px solid color-mix(in srgb, var(--accent) 30%, transparent);
+      animation: tlPulse 2.5s ease-in-out infinite;
+    }
+    @keyframes tlPulse { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.3); opacity: 0.2; } }
+    .tl-label { font-size: 16px; font-weight: 400; color: var(--muted); text-align: center; letter-spacing: 0.02em; }
+    .tl-label strong { color: var(--fg); font-weight: 510; }
+    .tl-sub { font-family: var(--font-mono); color: var(--muted); font-size: 13px; letter-spacing: 0.04em; display: inline-block; margin-top: 2px; text-transform: uppercase; }
+
+    .icon-svg { width: 32px; height: 32px; color: var(--accent); flex-shrink: 0; }
+
+    @media (max-width: 768px) {
+      .container { padding: 0 24px; }
+      .section { padding: 100px 0; }
+      .grid-2 { grid-template-columns: 1fr !important; gap: 40px !important; }
+      .grid-3 { grid-template-columns: 1fr !important; gap: 32px !important; }
+      .pkg-grid { grid-template-columns: 1fr; }
+      .tl-label { font-size: 15px; }
+      .nav-inner { gap: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .nav-link { white-space: nowrap; }
+      .card .card-hover-reveal { opacity: 0.65; }
+    }
+    @media (max-width: 480px) {
+      .econ-grid { grid-template-columns: 1fr; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+
+  <script type="text/babel">
+    const { useEffect, useRef, useState } = React;
+
+    function useScrollReveal(ref) {
+      useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const obs = new IntersectionObserver(([entry]) => {
+          if (entry.isIntersecting) { el.classList.add('revealed'); obs.unobserve(el); }
+        }, { threshold: 0.12 });
+        obs.observe(el);
+        return () => obs.disconnect();
+      }, [ref]);
+    }
+
+    function useGameOfLife(canvasRef, { interval = 3200, fill = 0.14 } = {}) {
+      useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        const parent = canvas.parentElement;
+        let grid = []; let lastTick = 0; let w = 0; let h = 0; let animId;
+        let cols = 0, rows = 0; let beat = 0; const BEAT = 800; const CSZ = 40;
+        // Offsets to align the canvas-drawn Life cells with the page's
+        // background grid (which uses 40px squares). Without this the
+        // canvas origin can be misaligned by container padding, fixed
+        // nav, or body borders and create a visible gap at the top.
+        let originOffsetX = 0, originOffsetY = 0;
+        function resizeGrid(g, newCols, newRows) {
+          const ng = []; for (let r = 0; r < newRows; r++) { ng[r] = []; for (let c = 0; c < newCols; c++) ng[r][c] = (g && g[r % g.length] && g[r % g.length][c % g[0].length]) || (Math.random() < fill ? 1 : 0); } return seedGliders(ng, newCols, newRows);
+        }
+        function seedGliders(g, c, r) {
+          if (r === 0 || c === 0) return g;
+          const gliders = [[0,1,0,0,0,0,0,0,1,1],[0,0,1,0,0,0,0,0,1,1],[1,1,1,0,0,0,0,0,0,0]];
+          const spots = [[0.25,0.3],[0.5,0.55],[0.75,0.15]];
+          for (const [sr, sc] of spots) { const cy = Math.floor(r * sr) % r, cx = Math.floor(c * sc) % c; for (let dr = 0; dr < 3; dr++) for (let dc = 0; dc < 10; dc++) if (gliders[dr][dc]) g[(cy + dr) % r][(cx + dc) % c] = 1; }
+          return g;
+        }
+        function nextGen(g, c, r) { const ng = g.map(row => [...row]); for (let r2 = 0; r2 < r; r2++) for (let c2 = 0; c2 < c; c2++) { let n = 0; for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { if (dr === 0 && dc === 0) continue; n += g[(r2 + dr + r) % r][(c2 + dc + c) % c]; } ng[r2][c2] = g[r2][c2] === 1 ? (n < 2 || n > 3 ? 0 : 1) : (n === 3 ? 1 : 0); } return ng; }
+        function draw() { if (w <= 0 || h <= 0) return; ctx.clearRect(0, 0, w, h);
+          // Draw cells offset so they line up with the page background grid.
+          for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (grid[r][c]) {
+            ctx.fillStyle = beat === 0 ? 'oklch(68% 0.12 248 / 0.22)' : 'oklch(72% 0.08 240 / 0.14)';
+            const x = c * CSZ - originOffsetX;
+            const y = r * CSZ - originOffsetY;
+            ctx.fillRect(x, y, CSZ, CSZ);
+          }
+        }
+        function resize() { const rect = parent.getBoundingClientRect(); const nw = Math.round(rect.width); const nh = Math.round(rect.height); if (nw <= 0 || nh <= 0) return; const dpr = window.devicePixelRatio || 1; canvas.width = nw * dpr; canvas.height = nh * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); canvas.style.width = nw + 'px'; canvas.style.height = nh + 'px';
+          // Compute origin offsets so the drawn cell grid snaps to the
+          // global 40px page background grid. Use rounded client coords to
+          // avoid subpixel misalignment, and normalise to 0..CSZ-1.
+          originOffsetX = ((Math.round(rect.left) % CSZ) + CSZ) % CSZ;
+          originOffsetY = ((Math.round(rect.top) % CSZ) + CSZ) % CSZ;
+          if (nw === w && nh === h) return; w = nw; h = nh;                       const nc = Math.max(20, Math.floor(w / CSZ)); const nr = Math.max(6, Math.floor(h / CSZ)); if (nc !== cols || nr !== rows) { w = nw; h = nh; grid = resizeGrid(grid, nc, nr); cols = nc; rows = nr; } }
+        { const rect = parent.getBoundingClientRect(); w = Math.round(rect.width); h = Math.round(rect.height); cols = Math.max(20, Math.floor(w / CSZ)); rows = Math.max(6, Math.floor(h / CSZ)); grid = resizeGrid(null, cols, rows); resize(); }
+        const ro = new ResizeObserver(() => { resize(); draw(); });
+        ro.observe(parent);
+        function loop(now) { draw(); if (now - lastTick >= BEAT) { grid = nextGen(grid, cols, rows); beat = (beat + 1) % 4; draw(); lastTick = now; } animId = requestAnimationFrame(loop); }
+        animId = requestAnimationFrame(loop);
+        return () => { cancelAnimationFrame(animId); ro.disconnect(); };
+      }, [canvasRef, interval, fill]);
+    }
+
+    /* ---- Three.js Hero ---- */
+    function ThreeHero() {
+      const ref = useRef(null);
+      useEffect(() => {
+        if (typeof THREE === 'undefined') return;
+        const el = ref.current;
+        if (!el || el.clientWidth <= 0) return;
+        const w = el.clientWidth, h = el.clientHeight;
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 100);
+        camera.position.z = 6;
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(w, h);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(0x000000, 0);
+        el.appendChild(renderer.domElement);
+        const pc = 80; const pp = new Float32Array(pc * 3);
+        for (let i = 0; i < pc * 3; i++) pp[i] = (Math.random() - 0.5) * 14;
+        const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pp, 3));
+        const colors = new Float32Array(pc * 3);
+        for (let i = 0; i < pc; i++) {
+          const c = Math.random() > 0.4 ? [0.22, 0.42, 0.96] : [0.88, 0, 0.55];
+          colors[i*3] = c[0]; colors[i*3+1] = c[1]; colors[i*3+2] = c[2];
+        }
+        pg.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        const pm = new THREE.PointsMaterial({ size: 0.015, transparent: true, opacity: 0.045, vertexColors: true, depthWrite: false, blending: THREE.AdditiveBlending });
+        const pts = new THREE.Points(pg, pm);
+        scene.add(pts);
+        let id; let t = 0;
+        function tick() {
+          id = requestAnimationFrame(tick);
+          t += 0.003;
+          pts.rotation.y = Math.sin(t * 0.15) * 0.04;
+          pts.rotation.x = Math.sin(t * 0.1) * 0.02;
+          renderer.render(scene, camera);
+        }
+        tick();
+        const ro = new ResizeObserver(() => { const nw = el.clientWidth, nh = el.clientHeight; if (nw > 0) { camera.aspect = nw / nh; camera.updateProjectionMatrix(); renderer.setSize(nw, nh); } });
+        ro.observe(el);
+        return () => { cancelAnimationFrame(id); renderer.dispose(); pg.dispose(); pm.dispose(); ro.disconnect(); };
+      }, []);
+      return <div ref={ref} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }} />;
+    }
+
+    /* ---- Icons ---- */
+    const IconMentor = () => (
+      <svg className="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2a7 7 0 0 0-7 7c0 2.4 1.2 4.5 3 5.7V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.3c1.8-1.2 3-3.3 3-5.7a7 7 0 0 0-7-7z"/>
+        <path d="M9 17v3"/><path d="M15 17v3"/><path d="M12 17v3"/>
+      </svg>
+    );
+    const IconFellow = () => (
+      <svg className="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 8l4 4-4 4"/><path d="M8 8l-4 4 4 4"/>
+        <rect x="10" y="2" width="4" height="20" rx="1"/>
+      </svg>
+    );
+    const IconPM = () => (
+      <svg className="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+        <rect x="8" y="2" width="8" height="4" rx="1"/>
+        <path d="M8 12h8"/><path d="M8 16h5"/>
+      </svg>
+    );
+    /* ---- Nav ---- */
+    function Nav() {
+      const [active, setActive] = useState('');
+      useEffect(() => {
+        const handler = () => {
+          let current = '';
+          for (const id of ['about','structure','economics','timeline','contact']) {
+            const el = document.getElementById(id);
+            if (el && el.getBoundingClientRect().top <= 200) current = id;
+          }
+          setActive(current);
+        };
+        window.addEventListener('scroll', handler, { passive: true });
+        return () => window.removeEventListener('scroll', handler);
+      }, []);
+      return (
+        <nav className="nav" role="navigation" aria-label="Section navigation">
+          <div className="nav-inner">
+            <span className="nav-brand">AI Solutions Lab</span>
+            <a className={`nav-link${active === 'about' ? ' active blue' : ''}`} href="#about">About</a>
+            <a className={`nav-link${active === 'structure' ? ' active pink' : ''}`} href="#structure">Structure</a>
+            <a className={`nav-link${active === 'economics' ? ' active blue' : ''}`} href="#economics">Package</a>
+            <a className={`nav-link${active === 'timeline' ? ' active pink' : ''}`} href="#timeline">Timeline</a>
+            <a className={`nav-link${active === 'contact' ? ' active blue' : ''}`} href="#contact">Contact</a>
+          </div>
+        </nav>
+      );
+    }
+
+    /* ---- Artworks ---- */
+    function HeroArt() {
+      return (
+        <svg aria-hidden="true" viewBox="0 0 1200 800" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.12 }}>
+          <defs>
+            <linearGradient id="hg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="var(--accent)"/><stop offset="100%" stopColor="transparent"/></linearGradient>
+            <linearGradient id="hg2" x1="1" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--accent2)"/><stop offset="100%" stopColor="transparent"/></linearGradient>
+            <linearGradient id="curvePink" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="var(--accent)" stopOpacity="0"/><stop offset="50%" stopColor="var(--accent)" stopOpacity="0.5"/><stop offset="100%" stopColor="var(--accent)" stopOpacity="0"/></linearGradient>
+            <linearGradient id="curveBlue" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="var(--accent2)" stopOpacity="0"/><stop offset="50%" stopColor="var(--accent2)" stopOpacity="0.5"/><stop offset="100%" stopColor="var(--accent2)" stopOpacity="0"/></linearGradient>
+          </defs>
+          {/* converging bezier curves */}
+          <path d="M-40,340 C200,140 400,540 640,340" fill="none" stroke="url(#curveBlue)" strokeWidth="2" />
+          <path d="M1240,340 C1000,140 800,540 560,340" fill="none" stroke="url(#curveBlue)" strokeWidth="2" />
+          <path d="M-40,620 C260,420 480,200 640,340" fill="none" stroke="url(#curvePink)" strokeWidth="2" />
+          <path d="M1240,620 C940,420 720,200 560,340" fill="none" stroke="url(#curvePink)" strokeWidth="2" />
+          {/* large colour washes */}
+          <circle cx="200" cy="150" r="420" fill="url(#hg1)" opacity="0.1" />
+          <circle cx="1000" cy="650" r="360" fill="url(#hg2)" opacity="0.08" />
+          {/* concentric ring system */}
+          <circle cx="600" cy="400" r="180" fill="none" stroke="var(--accent)" strokeWidth="2" opacity="0.04" />
+          <circle cx="600" cy="400" r="240" fill="none" stroke="var(--accent2)" strokeWidth="1" opacity="0.03" />
+          <circle cx="600" cy="400" r="320" fill="none" stroke="var(--accent)" strokeWidth="0.5" opacity="0.02" strokeDasharray="6 18" />
+          {/* corner brackets */}
+          <path d="M80,80 L80,140 M80,80 L140,80" fill="none" stroke="var(--accent2)" strokeWidth="1" opacity="0.08" />
+          <path d="M1120,80 L1120,140 M1120,80 L1060,80" fill="none" stroke="var(--accent2)" strokeWidth="1" opacity="0.08" />
+          <path d="M80,720 L80,660 M80,720 L140,720" fill="none" stroke="var(--accent)" strokeWidth="1" opacity="0.06" />
+          <path d="M1120,720 L1120,660 M1120,720 L1060,720" fill="none" stroke="var(--accent)" strokeWidth="1" opacity="0.06" />
+          {/* vertical rhythm lines */}
+          {[100, 200, 400, 600, 800, 1000, 1100].map((x,i) => (
+            <line key={i} x1={x} y1={i % 2 === 0 ? 160 : 180} x2={x} y2={i % 2 === 0 ? 640 : 620} stroke={i % 2 === 0 ? 'var(--accent)' : 'var(--accent2)'} strokeWidth="0.3" opacity={0.02 + (2 - Math.abs(3 - i)) * 0.008} />
+          ))}
+          {/* floating dots grid */}
+          {[200, 400, 600, 800, 1000].map((x,i) => (
+            <g key={'dg'+i}>
+              <circle cx={x} cy={200 + i * 10} r={2} fill="var(--accent2)" opacity={0.04} />
+              <circle cx={x} cy={600 - i * 10} r={1.5} fill="var(--accent)" opacity={0.03} />
+            </g>
+          ))}
+        </svg>
+      );
+    }
+
+    function AboutArt() {
+      return (
+        <svg aria-hidden="true" viewBox="0 0 960 400" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.08 }}>
+          <defs>
+            <linearGradient id="ag1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--accent2)"/><stop offset="100%" stopColor="transparent"/></linearGradient>
+          </defs>
+          {[0,1,2].map(l => (
+            <g key={l} opacity={0.08 - l * 0.02}>
+              <circle cx={240 + l * 340} cy={120 + l * 50} r={60} fill="none" stroke="var(--accent2)" strokeWidth="0.4" />
+              <circle cx={240 + l * 340} cy={120 + l * 50} r={25} fill="var(--accent)" opacity="0.05" />
+            </g>
+          ))}
+          {[120, 280, 440, 600, 760, 920].map((x,i) => (
+            <line key={i} x1={x} y1={0} x2={x - 40 + Math.sin(i)*20} y2={400} stroke="var(--accent2)" strokeWidth="0.2" opacity={0.02 + i * 0.006} />
+          ))}
+          <path d="M0 200 Q240 100 480 220 T960 160" fill="none" stroke="var(--accent)" strokeWidth="0.3" opacity="0.04" />
+        </svg>
+      );
+    }
+
+    function StructureArt() {
+      return (
+        <svg aria-hidden="true" viewBox="0 0 960 500" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.07 }}>
+          {[0,1,2].map(i => (
+            <g key={i}>
+              <polygon points={`${250 + i*250},30 ${280 + i*250},80 ${250 + i*250},130 ${220 + i*250},80`} fill="none" stroke={i===1 ? 'var(--accent)' : 'var(--accent2)'} strokeWidth="0.4" opacity={0.06} />
+              <polygon points={`${250 + i*250},80 ${270 + i*250},180 ${250 + i*250},280 ${230 + i*250},180`} fill="none" stroke={i===1 ? 'var(--accent2)' : 'var(--accent)'} strokeWidth="0.3" opacity={0.04} />
+            </g>
+          ))}
+          {[0,1,2,3,4].map(i => (
+            <circle key={i} cx={160 + i * 160} cy={350 + Math.sin(i*1.2)*40} r={3 + i} fill={i % 2 === 0 ? 'var(--accent)' : 'var(--accent2)'} opacity={0.04} />
+          ))}
+        </svg>
+      );
+    }
+
+    function EconomicsArt() {
+      return (
+        <svg aria-hidden="true" viewBox="0 0 960 400" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.08 }}>
+          {[0,1,2,3,4].map(i => (
+            <g key={i} opacity={0.06 - i * 0.01}>
+              <rect x={100 + i * 180} y={300 - i * 50} width={60} height={i * 50 + 20} fill="none" stroke={i % 2 === 0 ? 'var(--accent)' : 'var(--accent2)'} strokeWidth="0.3" />
+            </g>
+          ))}
+          <path d="M0 320 Q240 240 480 280 T960 200" fill="none" stroke="var(--accent)" strokeWidth="0.3" opacity="0.03" />
+          <path d="M0 340 Q240 280 480 300 T960 240" fill="none" stroke="var(--accent2)" strokeWidth="0.2" opacity="0.02" />
+        </svg>
+      );
+    }
+
+    function TimelineArt() {
+      return (
+        <svg aria-hidden="true" viewBox="0 0 960 300" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.06 }}>
+          <path d="M-40 150 Q240 60 480 140 T1000 100" fill="none" stroke="var(--accent)" strokeWidth="0.3" opacity="0.05" />
+          <path d="M-40 160 Q240 80 480 160 T1000 120" fill="none" stroke="var(--accent2)" strokeWidth="0.2" opacity="0.03" />
+          {[80, 280, 480, 680, 880].map((x,i) => (
+            <g key={i}>
+              <line x1={x} y1={100 - i * 5} x2={x} y2={200 + i * 8} stroke={i % 2 === 0 ? 'var(--accent)' : 'var(--accent2)'} strokeWidth="0.2" opacity={0.02 + i * 0.005} />
+              <circle cx={x} cy={80 + i * 10} r={2} fill={i % 2 === 0 ? 'var(--accent)' : 'var(--accent2)'} opacity={0.04} />
+            </g>
+          ))}
+        </svg>
+      );
+    }
+
+    /* ---- Sections ---- */
+    function Hero() {
+      const canvasRef = useRef(null);
+      useGameOfLife(canvasRef, { interval: 2600 });
+      return (
+        <section aria-label="Hero" style={{
+          position: 'relative', minHeight: '100vh',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          overflow: 'hidden',
+        }}>
+          <ThreeHero />
+          <canvas ref={canvasRef} aria-hidden="true" style={{
+            position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none',
+          }} />
+          <div aria-hidden="true" style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(180deg, oklch(100% 0 0 / 0.5) 0%, transparent 100%)',
+          }} />
+          <HeroArt />
+          <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '40px 32px' }}>
+            <h1 className="hero-entrance" style={{
+              fontFamily: 'var(--font-display)', fontSize: 'clamp(72px, 14vw, 140px)', fontWeight: 400,
+              lineHeight: 0.9, letterSpacing: '-0.03em',
+              color: 'var(--accent)',
+              marginBottom: 12,
+            }}>
+              BRAC
+            </h1>
+            <div className="hero-entrance" style={{
+              fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 3vw, 32px)', fontWeight: 400,
+              fontStyle: 'italic', lineHeight: 1.15, letterSpacing: '0.01em', marginBottom: 24, color: 'var(--accent2)',
+            }}>
+              Student AI Solutions Lab
+            </div>
+            <p className="hero-entrance shimmer-text" style={{
+              fontFamily: 'var(--font)', fontSize: 18, fontWeight: 350,
+              lineHeight: 1.6, maxWidth: 560, margin: '0 auto', marginBottom: 8,
+            }}>
+              The AI talent pipeline Bangladesh deserves.
+            </p>
+          </div>
+          <div className="scroll-chevron" aria-hidden="true" />
+        </section>
+      );
+    }
+
+    const SectionLabel = ({ num, label }) => (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 48 }}>
+        <span style={{
+          fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 400, letterSpacing: '0.06em', color: num % 2 === 1 ? 'var(--accent)' : 'var(--accent2)',
+          animation: num % 2 === 1 ? 'breathe 3s ease-in-out infinite' : 'breatheBlue 3s ease-in-out infinite',
+        }}>
+          {String(num).padStart(2, '0')}
+        </span>
+        <span style={{ flex: 1, height: 1, background: 'oklch(0% 0 0 / 0.1)' }} />
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 400, letterSpacing: '0.12em', textTransform: 'uppercase', color: ['Rationale','Package'].includes(label) ? 'var(--accent2)' : 'var(--muted)' }}>
+          {label}
+        </span>
+      </div>
+    );
+
+    function About() {
+      const ref = useRef(null); useScrollReveal(ref);
+      return (
+        <section id="about" className="section reveal" ref={ref} aria-label="Program rationale" style={{
+            position: 'relative', overflow: 'hidden',
+            background: 'radial-gradient(ellipse 60% 40% at 50% 30%, oklch(90% 0.008 30 / 0.4) 0%, transparent 70%)',
+        }}>
+          <svg aria-hidden="true" viewBox="0 0 960 400" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.04 }}>
+            <path d="M0,200 Q240,60 480,220 T960,120" fill="none" stroke="var(--accent2)" strokeWidth="0.5" />
+            <path d="M0,240 Q240,100 480,260 T960,160" fill="none" stroke="var(--accent)" strokeWidth="0.3" opacity="0.6" />
+          </svg>
+          <AboutArt />
+          <div className="container">
+            <SectionLabel num={1} label="Rationale" />
+            <div className="grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'start' }}>
+              <div style={{                 borderLeft: '3px solid color-mix(in srgb, var(--accent2) 45%, transparent)', paddingLeft: 32 }}>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 2.8vw, 31px)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-0.01em', marginBottom: 14 }}>
+                  BRAC runs at enormous scale — the AI constraint is execution capacity.
+                </p>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 400, color: 'var(--accent2)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>The gap BRAC faces</span>
+              </div>
+              <div style={{ borderLeft: `2px solid color-mix(in srgb, var(--accent) 20%, transparent)`, paddingLeft: 32 }}>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 2.8vw, 31px)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-0.01em', marginBottom: 14 }}>
+                  Talented students default to tutoring — there aren't well-paid avenues for real ML work in Bangladesh.
+                </p>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 400, color: 'var(--accent)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>The gap students face</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function Structure() {
+      const ref = useRef(null); useScrollReveal(ref);
+      const roles = [
+        { icon: <IconMentor />, title: 'Mentors', subtitle: 'From the field', desc: 'Experienced ML engineers, including diaspora members, recruited through direct outreach. They provide technical direction and review.' },
+        { icon: <IconFellow />, title: 'Student Fellows', subtitle: 'Two per project', desc: 'Selected through competitive vetting from the top of the national undergrad engineering pool. Full-time, three-month cycles.' },
+        { icon: <IconPM />, title: 'Project Manager', subtitle: 'Full-time', desc: 'Oversees the full cohort, principal point of contact with BRAC, manages day-to-day execution and clean handover.' },
+      ];
+      return (
+        <section id="structure" className="section reveal" ref={ref} aria-label="Program structure" style={{
+            position: 'relative', overflow: 'hidden',
+            background: 'radial-gradient(ellipse 60% 40% at 50% 70%, oklch(90% 0.008 240 / 0.35) 0%, transparent 70%)',
+        }}>
+          <svg aria-hidden="true" viewBox="0 0 960 500" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.035 }}>
+            {[0,1,2].map(i => (
+              <path key={i} d={`M${100+i*60},${120+i*40} C${300+i*40},${50+i*30} ${500+i*20},${200+i*20} ${700+i*30},${100+i*50}`} fill="none" stroke={i % 2 === 0 ? 'var(--accent)' : 'var(--accent2)'} strokeWidth="0.3" opacity={0.5 - i*0.1} />
+            ))}
+          </svg>
+          <StructureArt />
+          <div className="container">
+            <SectionLabel num={2} label="Structure" />
+            <div className="grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, alignItems: 'stretch' }}>
+              {roles.map((r, i) => (
+                <div key={i} className="card" style={{
+                  background: 'oklch(100% 0 0)', border: '0.5px solid oklch(0% 0 0 / 0.12)',
+                  display: 'flex', flexDirection: 'column',
+                }}>
+                  <div style={{ marginBottom: 16 }}>{r.icon}</div>
+                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 400, letterSpacing: '-0.01em', marginBottom: 4 }}>{r.title}</h2>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 400, color: i % 2 === 0 ? 'var(--accent)' : 'var(--accent2)', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block' }}>{r.subtitle}</span>
+                  <div className="card-hover-reveal">
+                    <p style={{ fontSize: 16, fontWeight: 350, lineHeight: 1.65, letterSpacing: '0.01em', color: 'var(--muted)', marginTop: 14, borderTop: '0.5px solid oklch(0% 0 0 / 0.08)', paddingTop: 14 }}>{r.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    const IconStipend = () => (
+      <svg className="pkg-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2v24"/><path d="M9 7h8a3 3 0 0 1 0 6H9"/><path d="M12 17h6a3 3 0 0 1 0 6h-6"/>
+      </svg>
+    );
+    const IconMentorship = () => (
+      <svg className="pkg-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 14a8 8 0 1 1-16 0 8 8 0 0 1 16 0z"/><path d="M14 10v4l2 2"/>
+      </svg>
+    );
+    const IconProduct = () => (
+      <svg className="pkg-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="4" y="4" width="20" height="8" rx="1.5"/><rect x="4" y="17" width="20" height="7" rx="1.5"/>
+        <path d="M11 8h6M11 20.5h6"/>
+      </svg>
+    );
+    const IconLaunch = () => (
+      <svg className="pkg-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 4a24 24 0 0 0-7 14h14A24 24 0 0 0 14 4z"/><path d="M13 10v4l2 2"/><path d="M10 22.5a3 3 0 0 0 4.5 2.6 3 3 0 0 0 4.5-2.6"/>
+      </svg>
+    );
+
+    function Economics() {
+      const ref = useRef(null); useScrollReveal(ref);
+      const [revealed, setRevealed] = useState(false);
+      useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const obs = new IntersectionObserver(([entry]) => {
+          if (entry.isIntersecting) { setRevealed(true); obs.unobserve(el); }
+        }, { threshold: 0.15 });
+        obs.observe(el);
+        return () => obs.disconnect();
+      }, [ref]);
+
+      const items = [
+        { icon: <IconStipend />, title: 'Full-time stipend', desc: 'Paid for the full 3-month cycle so you can focus entirely on building.' },
+        { icon: <IconMentorship />, title: 'Senior mentorship', desc: 'One-on-one guidance from experienced ML engineers, including diaspora practitioners.' },
+        { icon: <IconProduct />, title: 'Real AI products', desc: 'Ship actual ML solutions for BRAC\'s scale — this goes on your portfolio, not a side project.' },
+        { icon: <IconLaunch />, title: 'Career accelerator', desc: 'References, network, and demonstrable work that sets you apart from the pool.' },
+      ];
+
+      return (
+        <section id="economics" className="section reveal" ref={ref} aria-label="Fellowship package" style={{
+            position: 'relative', overflow: 'hidden',
+            background: 'radial-gradient(ellipse 60% 40% at 50% 30%, oklch(90% 0.008 30 / 0.3) 0%, transparent 70%)',
+        }}>
+          <svg aria-hidden="true" viewBox="0 0 960 400" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.04 }}>
+            <path d="M0,280 Q240,80 480,180 T960,60" fill="none" stroke="var(--accent2)" strokeWidth="0.5" />
+            <path d="M0,300 Q240,120 480,210 T960,100" fill="none" stroke="var(--accent)" strokeWidth="0.3" opacity="0.5" />
+          </svg>
+          <EconomicsArt />
+          <div className="container">
+            <SectionLabel num={3} label="Package" />
+            <div style={{
+              borderLeft: '3px solid color-mix(in srgb, var(--accent2) 40%, transparent)',
+              paddingLeft: 32, marginBottom: 16,
+            }}>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 2.8vw, 39px)', fontWeight: 400, lineHeight: 1.1, letterSpacing: '-0.02em', marginBottom: 8 }}>
+                  A fellowship built to invest in you.
+                </p>
+                <p style={{ fontSize: 16, fontWeight: 350, color: 'var(--muted)', maxWidth: 480, letterSpacing: '0em' }}>
+                  Every fellow is paid, mentored, and working on problems that matter at BRAC scale.
+                </p>
+            </div>
+            <div className="pkg-grid" style={{ opacity: revealed ? 1 : 0, transform: revealed ? 'translateY(0)' : 'translateY(20px)', transition: 'opacity 0.6s ease, transform 0.6s ease' }}>
+              {items.map((item, i) => (
+                <div key={i} className="pkg-card" style={{ transitionDelay: `${i * 0.08}s` }}>
+                  {item.icon}
+                  <div>
+                    <div className="pkg-title">{item.title}</div>
+                    <div className="pkg-desc">{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function Timeline() {
+      const ref = useRef(null); useScrollReveal(ref);
+      const items = [
+        { label: 'Applications open', sub: 'Coming soon', blue: true },
+        { label: 'Program launches', sub: 'Q3 2026', active: true },
+        { label: 'First cohort wraps', sub: '' },
+      ];
+      return (
+        <section id="timeline" className="section reveal" ref={ref} aria-label="Program timeline" style={{
+          position: 'relative', overflow: 'hidden', paddingBottom: 80,
+            background: 'radial-gradient(ellipse 60% 40% at 50% 70%, oklch(90% 0.008 240 / 0.25) 0%, transparent 70%)',
+        }}>
+          <svg aria-hidden="true" viewBox="0 0 960 300" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.035 }}>
+            <path d="M0,120 C200,40 300,180 480,100 S700,200 960,100" fill="none" stroke="var(--accent2)" strokeWidth="0.4" />
+            <path d="M0,140 C200,60 300,200 480,120 S700,220 960,120" fill="none" stroke="var(--accent)" strokeWidth="0.2" opacity="0.6" />
+          </svg>
+          <TimelineArt />
+          <div className="container">
+            <SectionLabel num={4} label="Timeline" />
+            <div className="timeline">
+              {items.map((item, i) => (
+                <div key={i} className="tl-item">
+                  <div className={`tl-dot${item.active ? ' active' : ''}${item.blue ? ' blue' : ''}`} />
+                  <div className="tl-label">
+                    <strong>{item.label}</strong>{item.sub && <><br /><span className="tl-sub">{item.sub}</span></>}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p style={{ fontFamily: 'var(--font-mono)', textAlign: 'center', fontSize: 13, color: 'var(--accent2)', marginTop: 24, letterSpacing: '0.02em', opacity: 0.7 }}>
+              Exact dates TBD — stay tuned.
+            </p>
+          </div>
+        </section>
+      );
+    }
+
+    function Footer() {
+      const ref = useRef(null); useScrollReveal(ref);
+      return (
+        <footer id="contact" ref={ref} className="section reveal" aria-label="Contact" style={{ paddingTop: 60, paddingBottom: 64 }}>
+          <div className="container" style={{ textAlign: 'center' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 400, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent2)', display: 'block', marginBottom: 8, opacity: 0.8 }}>
+              Launching Q3 2026
+            </span>
+            <div style={{ marginTop: 48, paddingTop: 24, borderTop: '2px solid oklch(0% 0 0 / 0.12)' }}>
+              <a href="mailto:ai-lab@brac.net" style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 400, letterSpacing: '0.02em', color: 'var(--muted)', textDecorationColor: 'color-mix(in srgb, var(--accent2) 40%, transparent)' }} onMouseOver={e => e.currentTarget.style.color = 'var(--accent2)'} onMouseOut={e => e.currentTarget.style.color = ''}>ai-lab@brac.net</a>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 400, letterSpacing: '0.06em', color: 'var(--muted)', display: 'block', marginTop: 8 }}>&copy; 2026 BRAC</span>
+            </div>
+          </div>
+        </footer>
+      );
+    }
+
+    function ScrollProgress() {
+      const [pct, setPct] = useState(0);
+      useEffect(() => {
+        const handler = () => {
+          const h = document.documentElement.scrollHeight - window.innerHeight;
+          setPct(h > 0 ? (window.scrollY / h) * 100 : 0);
+        };
+        window.addEventListener('scroll', handler, { passive: true });
+        return () => window.removeEventListener('scroll', handler);
+      }, []);
+      return <div className="progress-bar" style={{ width: pct + '%' }} />;
+    }
+
+    function App() {
+      return <>
+        <Nav />
+        <ScrollProgress />
+        <Hero />
+        <About />
+        <Structure />
+        <Economics />
+        <Timeline />
+        <Footer />
+      </>;
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
