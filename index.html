@@ -340,6 +340,31 @@
     let hover = null, pressing = false, lastCell = '';
     let ripples = [];
 
+    /* ---- Echo locator: trail + ping ---- */
+    let trail = [];
+    let lastPing = '';
+    let prevPX = 0, prevPY = 0, prevPT = 0;
+    function trailPing(cell, speed) {
+      const ac = pkCtx();
+      if (!ac) return;
+      if (ac.state === 'suspended') { ac.resume(); return; }
+      const c = Math.min(Math.max(speed, 0.05), 3);
+      const BASE = [261.63, 293.66, 329.63, 392.00, 440.00];
+      const idx = Math.min(Math.floor(c / 3 * 5), 4);
+      const oct = 3 + Math.floor(c / 3 * 2.5);
+      const freq = BASE[idx] * Math.pow(2, oct - 4);
+      const t = ac.currentTime;
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = 'sine';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.04, t + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+      o.connect(g).connect(ac.destination);
+      o.start(t); o.stop(t + 0.1);
+    }
+
     /* ---- Voltorb easter egg ---- */
     const pk = { r:0, c:0, anger:0, visible:false, locked:false, lastR:-1, lastC:-1,
       appearAt:0, vanishAt:0, shakeX:0, shakeY:0, shakeStart:0, shakeDur:0 };
@@ -438,6 +463,15 @@
         ctx.arc(cx, cy, k * SZ * 3.5, 0, Math.PI * 2);
         ctx.strokeStyle = 'rgba(236,0,140,' + (0.5 * (1 - k)) + ')';
         ctx.lineWidth = 2; ctx.stroke();
+      }
+
+      // echo trail
+      trail = trail.filter(p => now - p.t < 1500);
+      for (const p of trail) {
+        const a = 1 - (now - p.t) / 1500;
+        const s = 6;
+        ctx.fillStyle = 'rgba(236,0,140,' + (a * 0.55) + ')';
+        ctx.fillRect(p.c * SZ + (SZ - s) / 2, p.r * SZ + (SZ - s) / 2, s, s);
       }
 
       // pokemon / explosion
@@ -687,6 +721,30 @@
     // input (read at window level; links opt out)
     window.addEventListener('pointermove', (e) => {
       hover = cellAt(e.clientX, e.clientY);
+
+      // echo locator
+      if (!nagaiVisible) {
+        const dx = e.clientX - prevPX, dy = e.clientY - prevPY;
+        const dt = Math.max(e.timeStamp - prevPT, 1);
+        const speed = Math.sqrt(dx * dx + dy * dy) / dt;
+        prevPX = e.clientX; prevPY = e.clientY; prevPT = e.timeStamp;
+        if (hover) {
+          const tLast = trail.length ? trail[trail.length - 1] : null;
+          if (!tLast || tLast.r !== hover.r || tLast.c !== hover.c) {
+            trail.push({ r: hover.r, c: hover.c, t: performance.now() });
+            if (trail.length > 50) trail.shift();
+          }
+          if (grid[hover.r][hover.c] === 1) {
+            const pk = hover.r + ':' + hover.c;
+            if (pk !== lastPing) { lastPing = pk; trailPing(hover, speed); }
+          } else {
+            lastPing = '';
+          }
+        } else {
+          lastPing = '';
+        }
+      }
+
       if (pressing && hover) {
         const key = hover.r + ':' + hover.c;
         if (key !== lastCell) { lastCell = key; playCell(hover); }
@@ -697,11 +755,11 @@
       const cell = cellAt(e.clientX, e.clientY);
       if (!cell) return;
       if (pk.visible && cell.r === pk.r && cell.c === pk.c && !pk.locked) {
-        Sound.start().then(() => pkAnger());
+        Sound.start().then(() => { if (pkAudio) pkAudio.resume(); pkAnger(); });
         return;
       }
       pressing = true; lastCell = cell.r + ':' + cell.c;
-      Sound.start().then(() => playCell(cell));
+      Sound.start().then(() => { if (pkAudio) pkAudio.resume(); playCell(cell); });
     });
     const release = () => { pressing = false; lastCell = ''; };
     window.addEventListener('pointerup', release);
