@@ -9,18 +9,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet" />
 
-  <!-- Tone.js: powers the playable grid. Optional — there's a Web Audio fallback. -->
-  <script src="https://unpkg.com/tone@14.8.49/build/Tone.js"></script>
-
   <style>
     :root {
-      --bg: #fbfbfa;
-      --ink: #14171c;
-      --muted: #6a7280;
-      --pink: #ec008c;          /* BRAC */
-      --blue: #3b6fe0;          /* accent */
-      --grid: rgba(59, 111, 224, 0.10);
-      --cell: 40px;
+      --bg: #080b12;            /* deep ink ground — the living grid glows on it */
+      --ink: #eaeef6;           /* near-white text */
+      --muted: #888fa3;
+      --pink: #ff2ea0;          /* BRAC — neon on dark */
+      --blue: #6fa8ff;          /* accent — luminous */
+      /* gridlines + cells live on the canvas (one plane) — see the JS */
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,12 +27,6 @@
       font-family: 'Inter', system-ui, sans-serif;
       color: var(--ink);
       background: var(--bg);
-      /* the grid, drawn as fixed light-blue rulings */
-      background-image:
-        linear-gradient(to right, var(--grid) 1px, transparent 1px),
-        linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
-      background-size: var(--cell) var(--cell);
-      background-attachment: fixed;
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
     }
@@ -50,16 +40,37 @@
       z-index: 0;
     }
 
+    /* The mute toggle — the track is ON by default, this is its off-ramp. A visible
+       pill in the pixel font so it reads on the dark ground and hints the page sings. */
+    #mute {
+      position: fixed; bottom: 18px; right: 18px; z-index: 5;
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 14px;
+      border: 1px solid rgba(120, 168, 255, 0.4);
+      border-radius: 999px;
+      background: rgba(8, 11, 18, 0.78);
+      -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+      color: #cfe0ff;
+      font-family: 'Silkscreen', monospace; font-size: 11px; letter-spacing: 0.06em;
+      text-transform: uppercase; cursor: pointer; opacity: 0.95;
+      box-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
+      transition: opacity 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
+    }
+    #mute:hover { opacity: 1; border-color: var(--pink); color: #fff; transform: translateY(-1px); }
+    #mute.off { color: var(--muted); border-color: rgba(120, 168, 255, 0.18); }
+
     /* Content floats above the grid. It's click-through (so you can play the
        grid behind the text) — only links re-enable pointer events. */
     .page {
       position: relative; z-index: 1;
-      max-width: 720px;
+      max-width: 780px;
       margin: 0 auto;
       padding: 0 28px;
       pointer-events: none;
+      user-select: none;            /* the page is a playable surface — dragging shouldn't select text */
+      -webkit-user-select: none;
     }
-    .page a { pointer-events: auto; }
+    .page a, .prow, .star { pointer-events: auto; }   /* clickable bits opt back in over the click-through grid */
 
     ::selection { background: var(--pink); color: #fff; }
 
@@ -73,41 +84,55 @@
 
     /* ---- Hero ---- */
     .hero {
+      position: relative;
       min-height: 100vh;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       text-align: center;
     }
+    /* a soft radial scrim darkens the grid right behind the hero text so it stays
+       legible, while the living cells keep playing out toward the edges. */
+    .hero::before {
+      content: '';
+      position: absolute; left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      width: min(900px, 94vw); height: min(540px, 66vh);
+      background: radial-gradient(ellipse at center,
+        rgba(8, 11, 18, 0.9) 0%, rgba(8, 11, 18, 0.66) 42%, rgba(8, 11, 18, 0) 74%);
+      z-index: -1; pointer-events: none;
+    }
+    /* BRAC wordmark — the Silkscreen pixel font, floating over the grid. */
     .brac {
       font-family: 'Silkscreen', monospace;
       font-weight: 700;
-      font-size: clamp(64px, 17vw, 184px);
+      font-size: clamp(56px, 13vw, 132px);
       line-height: 1;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.04em;
       color: var(--pink);
-      text-shadow:
-        0 0 22px rgba(236, 0, 140, 0.35),
-        0 0 64px rgba(236, 0, 140, 0.15);
+      text-shadow: 0 0 30px rgba(255, 46, 160, 0.45);   /* neon bloom */
     }
     .sub {
       font-family: 'Silkscreen', monospace;
       font-size: clamp(12px, 2.4vw, 17px);
       letter-spacing: 0.04em;
-      color: var(--blue);
-      margin-top: 22px;
-    }
-    .hint {
-      font-family: 'Silkscreen', monospace;
-      font-size: 10px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--muted);
-      opacity: 0.55;
-      margin-top: 40px;
+      color: #9cc4ff;                 /* a brighter blue so it reads on the dark ground */
+      margin-top: 26px;
+      text-shadow: 0 1px 12px rgba(0, 0, 0, 0.8), 0 0 14px rgba(111, 168, 255, 0.25);
     }
 
-    /* ---- Body sections ---- */
-    section { padding: 64px 0; }
+    /* ---- Body sections — a translucent reading panel so the prose stays
+       legible over the living grid, while the hero above stays open. ---- */
+    main {
+      margin: 0 auto 48px;
+      padding: 8px 40px 26px;
+      background: rgba(9, 13, 21, 0.74);
+      border: 1px solid rgba(120, 168, 255, 0.10);
+      border-radius: 18px;
+      backdrop-filter: blur(7px);
+      -webkit-backdrop-filter: blur(7px);
+    }
+    section { padding: 34px 0; }
+    section + section { border-top: 1px solid rgba(120, 168, 255, 0.08); }
 
     h2 {
       font-family: 'Silkscreen', monospace;
@@ -129,101 +154,118 @@
     p { font-size: 17px; color: var(--ink); }
     p + p { margin-top: 14px; }
     .muted { color: var(--muted); }
+    .small { font-size: 13px; }
+    .tbd {
+      font-family: 'Silkscreen', monospace; font-size: 10px; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--pink);
+      border: 1px dashed rgba(255, 46, 160, 0.45); border-radius: 6px;
+      padding: 1px 6px; margin-left: 4px; vertical-align: middle;
+    }
+
+    /* Hero cohort tag */
+    .tag {
+      display: inline-block; margin-top: 22px;
+      font-family: 'Silkscreen', monospace; font-size: 11px;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--pink);
+      border: 1px solid rgba(255, 46, 160, 0.45); border-radius: 999px;
+      padding: 6px 13px; text-shadow: 0 0 14px rgba(255, 46, 160, 0.3);
+    }
+
+    /* ---- Cohort roster: a numbered project list + team "constellations" — each a small
+       triangle of grid-cell photo tiles. Click any star or project for its detail readout. ---- */
+    .prow { display: grid; grid-template-columns: 42px 1fr; gap: 14px; align-items: baseline; padding: 13px 0; cursor: pointer; border-radius: 8px; transition: background .15s; }
+    .prow + .prow { border-top: 1px solid rgba(120,168,255,.07); }
+    .prow:hover { background: rgba(120,168,255,.05); }
+    .prow .idx { font-family: 'Silkscreen', monospace; font-size: 20px; color: var(--pink); text-shadow: 0 0 16px var(--pink); }
+    .prow .nm { font-size: 16px; font-weight: 500; }
+    .prow .one { font-size: 13.5px; color: var(--muted); margin-top: 2px; }
+
+    /* a team = a small triangle asterism — mentor apex, two fellows at the base */
+    .team { margin-top: 32px; }
+    .team-h { font-family: 'Silkscreen', monospace; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: #cfd8e8; margin-bottom: 2px; }
+    .team-h .num { color: var(--pink); text-shadow: 0 0 12px rgba(255,46,160,.6); }
+    .tri { position: relative; width: min(360px, 100%); height: 262px; margin: 0 auto; }
+    .lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 0; pointer-events: none; filter: drop-shadow(0 0 3px rgba(95,168,255,.5)); }
+    .lines line { stroke: rgba(135,185,255,.42); stroke-width: 1; vector-effect: non-scaling-stroke; }
+    .star { position: absolute; transform: translate(-50%,-50%); z-index: 1; cursor: pointer; }
+    .lbl { position: absolute; top: calc(100% + 7px); left: 50%; transform: translateX(-50%); white-space: nowrap; text-align: center; }
+    .lbl b { display: block; font-size: 13px; font-weight: 500; color: var(--ink); text-shadow: 0 1px 7px #080b12; }
+    .lbl span { font-family: 'Silkscreen', monospace; font-size: 8px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+    .star.mentor .lbl span { color: #9fc0ff; }
+    .photo { position: relative; width: 68px; height: 68px; overflow: hidden; background: #0e1626;
+      border: 1px solid rgba(120,168,255,.32); box-shadow: 0 0 0 1px #080b12, 0 0 14px rgba(95,168,255,.18); }
+    .photo img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; filter: saturate(.95) contrast(1.04) brightness(1.03); }   /* anchor at the top so heads never crop */
+    .gov { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen;
+      background-image:
+        repeating-linear-gradient(0deg, rgba(130,185,255,.28) 0 1px, transparent 1px 12px),
+        repeating-linear-gradient(90deg, rgba(130,185,255,.28) 0 1px, transparent 1px 12px);
+      background-size: 12px 12px; }
+    .ph-star { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 9px; height: 9px; border-radius: 50%; z-index: 1;
+      background: var(--cell); box-shadow: 0 0 9px var(--cell), 0 0 18px rgba(95,168,255,.55); animation: tw 3.6s ease-in-out infinite; }
+    @keyframes tw { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+    .star.mentor .photo { width: 80px; height: 80px; border-color: rgba(120,168,255,.55); box-shadow: 0 0 0 1px #080b12, 0 0 20px rgba(95,168,255,.34); }
+    .star:hover .photo { box-shadow: 0 0 0 1px #080b12, 0 0 22px var(--blue); }
+    .mtag { position: absolute; left: 4px; bottom: 4px; z-index: 2; font-family: 'Silkscreen', monospace; font-size: 7px; letter-spacing: .08em;
+      color: #cfe0ff; background: rgba(8,11,18,.72); padding: 2px 4px; border: 1px solid rgba(120,168,255,.5); }
+
+    /* detail "readout" — opens on click; keeps the constellation clean, depth one tap away */
+    .modal { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; padding: 24px;
+      background: rgba(4,6,11,.72); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+    .modal.open { display: flex; }
+    .card { position: relative; width: min(460px, 100%); background: #0a0e17; border: 1px solid rgba(120,168,255,.22); border-radius: 16px;
+      padding: 24px 24px 22px; box-shadow: 0 0 0 1px #080b12, 0 24px 70px rgba(0,0,0,.65), 0 0 44px rgba(95,168,255,.12);
+      background-image: repeating-linear-gradient(0deg, rgba(110,168,255,.05) 0 1px, transparent 1px 22px), repeating-linear-gradient(90deg, rgba(110,168,255,.05) 0 1px, transparent 1px 22px); background-size: 22px 22px; }
+    .card .x { position: absolute; top: 10px; right: 12px; width: 28px; height: 28px; border: none; background: transparent; color: var(--muted); font-size: 14px; cursor: pointer; border-radius: 6px; }
+    .card .x:hover { color: #fff; background: rgba(120,168,255,.1); }
+    .card .top { display: flex; gap: 16px; align-items: center; }
+    .cphoto { position: relative; width: 92px; height: 92px; flex: 0 0 auto; overflow: hidden; background: #0e1626;
+      border: 1px solid rgba(120,168,255,.4); box-shadow: 0 0 0 1px #080b12, 0 0 20px rgba(95,168,255,.3); }
+    .cphoto img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; filter: saturate(.95) contrast(1.04) brightness(1.03); }
+    .cnum { font-family: 'Silkscreen', monospace; font-size: 30px; color: var(--pink); text-shadow: 0 0 16px rgba(255,46,160,.5); flex: 0 0 auto; width: 60px; text-align: center; }
+    .card h3 { font-size: 20px; font-weight: 600; letter-spacing: -.01em; }
+    .csub { font-family: 'Silkscreen', monospace; font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: #9fc0ff; margin-top: 7px; }
+    .bio { margin-top: 15px; font-size: 14px; line-height: 1.55; color: #c3cad8; }
+    .links { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip { font-family: 'Silkscreen', monospace; font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; text-decoration: none;
+      color: #cfe0ff; border: 1px solid rgba(120,168,255,.4); border-radius: 999px; padding: 7px 12px; transition: .15s; }
+    .chip:hover { border-color: var(--pink); color: #fff; background: rgba(255,46,160,.08); }
 
     footer {
-      padding: 56px 0 72px;
+      padding: 48px 0 28px;           /* the city poster sits below, in #citygap */
       display: flex; flex-direction: column; gap: 8px;
       font-family: 'Silkscreen', monospace;
       font-size: 12px;
       letter-spacing: 0.02em;
+      color: #c2c9d8;                  /* lighter so it reads on the dark grid */
+      /* a solid dark outline keeps the pixel glyphs legible even over a bright cell */
+      text-shadow:
+        -1px -1px 0 #080b12, 1px -1px 0 #080b12, -1px 1px 0 #080b12, 1px 1px 0 #080b12,
+        0 0 8px #080b12;
     }
-    footer .copy { color: var(--muted); }
+    #citygap { width: 100%; }          /* height set in JS = the poster's full-width height */
+    footer a { color: #dbe2ee; }
+    footer .copy { color: #9aa3b6; }
 
     @media (max-width: 640px) {
-      section { padding: 48px 0; }
-    }
-
-    /* ---- Nagai overlay ---- */
-    #nagai-overlay {
-      display: none;
-      position: fixed; inset: 0;
-      z-index: 100;
-      align-items: center; justify-content: center;
-      flex-direction: row; gap: 32px;
-      pointer-events: none;
-    }
-    #nagai-overlay.active {
-      display: flex;
-      pointer-events: auto;
-    }
-    .nagai-frame {
-      position: relative;
-      display: inline-block;
-      background: #1a1a2e;
-      padding: 12px;
-      box-shadow:
-        0 0 0 2px #3B6FE0,
-        0 0 0 4px #1a1a2e,
-        0 0 0 6px #EC008C;
-    }
-    .nagai-img {
-      display: block;
-      max-width: 75vw;
-      max-height: 60vh;
-      object-fit: contain;
-    }
-    .nagai-close {
-      position: absolute;
-      top: -14px; right: -14px;
-      width: 28px; height: 28px;
-      background: #EC008C;
-      border: 2px solid #1a1a2e;
-      color: #fff;
-      font-family: 'Silkscreen', monospace;
-      font-size: 16px;
-      line-height: 1;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .nagai-close:hover {
-      background: #ff1a9e;
-    }
-    .nagai-quote {
-      font-family: 'Silkscreen', monospace;
-      font-size: clamp(12px, 2vw, 16px);
-      color: #EC008C;
-      text-align: right;
-      letter-spacing: 0.04em;
-      min-height: 1.4em;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-    .nagai-cursor {
-      display: inline;
-      animation: nagai-blink 0.6s steps(1) infinite;
-    }
-    @keyframes nagai-blink {
-      50% { opacity: 0; }
-    }
-    @media (max-width: 600px) {
-      #nagai-overlay {
-        flex-direction: column;
-        gap: 16px;
-      }
-      .nagai-quote {
-        text-align: center;
-      }
+      .page { padding: 0 16px; }
+      main { padding: 4px 18px 18px; margin-bottom: 32px; border-radius: 14px; }
+      section { padding: 24px 0; }
+      .lead { font-size: 19px; }
+      p { font-size: 16px; }
+      footer { padding: 32px 0 20px; }
+      .tri { width: 100%; }
     }
   </style>
 </head>
 <body>
   <canvas id="grid" aria-hidden="true"></canvas>
+  <button id="mute" type="button" aria-label="Mute" title="mute / unmute">♪ sound on</button>
 
   <div class="page">
     <header class="hero">
       <h1 class="brac">BRAC</h1>
       <p class="sub">Student AI Solutions Lab</p>
-      <p class="hint">click + drag anywhere to play the grid</p>
+      <span class="tag">Cohort 01 · 2026</span>
     </header>
 
     <main>
@@ -243,6 +285,55 @@
       </section>
 
       <section>
+        <h2>Projects</h2>
+        <p class="muted small">Three real problems this cohort ships against. <span class="tbd">placeholders</span></p>
+        <div class="prow"><span class="idx">01</span><span><span class="nm">Project One</span><div class="one">One line on the problem and what the team will ship.</div></span></div>
+        <div class="prow"><span class="idx">02</span><span><span class="nm">Project Two</span><div class="one">One line on the problem and what the team will ship.</div></span></div>
+        <div class="prow"><span class="idx">03</span><span><span class="nm">Project Three</span><div class="one">One line on the problem and what the team will ship.</div></span></div>
+      </section>
+
+      <section>
+        <h2>The Cohort</h2>
+        <p class="muted small">Each team — a mentor anchoring two fellows. Tap anyone for more. <span class="tbd">placeholders</span></p>
+
+        <div class="team">
+          <div class="team-h"><span class="num">01</span> Project One</div>
+          <div class="tri">
+            <svg class="lines" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <line x1="50" y1="16" x2="22" y2="74"/><line x1="50" y1="16" x2="78" y2="74"/><line x1="22" y1="74" x2="78" y2="74"/>
+            </svg>
+            <div class="star mentor" style="left:50%;top:16%"><div class="photo"><span class="gov"></span><span class="ph-star"></span><span class="mtag">Mentor</span></div><div class="lbl"><b>Mentor One</b><span>mentor</span></div></div>
+            <div class="star" style="left:22%;top:74%"><div class="photo"><img src="people/hasin.png" alt="Hasin"><span class="gov"></span></div><div class="lbl"><b>Hasin</b><span>fellow</span></div></div>
+            <div class="star" style="left:78%;top:74%"><div class="photo"><img src="people/shreas.png" alt="Shreas"><span class="gov"></span></div><div class="lbl"><b>Shreas</b><span>fellow</span></div></div>
+          </div>
+        </div>
+
+        <div class="team">
+          <div class="team-h"><span class="num">02</span> Project Two</div>
+          <div class="tri">
+            <svg class="lines" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <line x1="50" y1="16" x2="22" y2="74"/><line x1="50" y1="16" x2="78" y2="74"/><line x1="22" y1="74" x2="78" y2="74"/>
+            </svg>
+            <div class="star mentor" style="left:50%;top:16%"><div class="photo"><span class="gov"></span><span class="ph-star"></span><span class="mtag">Mentor</span></div><div class="lbl"><b>Mentor Two</b><span>mentor</span></div></div>
+            <div class="star" style="left:22%;top:74%"><div class="photo"><span class="gov"></span><span class="ph-star"></span></div><div class="lbl"><b>Fellow Three</b><span>fellow</span></div></div>
+            <div class="star" style="left:78%;top:74%"><div class="photo"><span class="gov"></span><span class="ph-star"></span></div><div class="lbl"><b>Fellow Four</b><span>fellow</span></div></div>
+          </div>
+        </div>
+
+        <div class="team">
+          <div class="team-h"><span class="num">03</span> Project Three</div>
+          <div class="tri">
+            <svg class="lines" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <line x1="50" y1="16" x2="22" y2="74"/><line x1="50" y1="16" x2="78" y2="74"/><line x1="22" y1="74" x2="78" y2="74"/>
+            </svg>
+            <div class="star mentor" style="left:50%;top:16%"><div class="photo"><span class="gov"></span><span class="ph-star"></span><span class="mtag">Mentor</span></div><div class="lbl"><b>Mentor Three</b><span>mentor</span></div></div>
+            <div class="star" style="left:22%;top:74%"><div class="photo"><span class="gov"></span><span class="ph-star"></span></div><div class="lbl"><b>Fellow Five</b><span>fellow</span></div></div>
+            <div class="star" style="left:78%;top:74%"><div class="photo"><span class="gov"></span><span class="ph-star"></span></div><div class="lbl"><b>Fellow Six</b><span>fellow</span></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section>
         <h2>Timeline</h2>
         <p class="muted">Launching Q3 2026 · applications open soon.</p>
       </section>
@@ -251,163 +342,366 @@
     <footer>
       <a href="mailto:ai-lab@brac.net">ai-lab@brac.net</a>
       <span class="copy">© 2026 BRAC</span>
+      <span class="copy">footer artwork — Hiroshi Nagai</span>
     </footer>
+    <!-- reserves the page room the full-width Nagai poster is painted into (height set in JS) -->
+    <div id="citygap" aria-hidden="true"></div>
   </div>
 
-  <div id="nagai-overlay">
-    <div class="nagai-quote" aria-live="polite"></div>
-    <div class="nagai-frame">
-      <img class="nagai-img" src="nagai.webp" alt="" />
-      <button class="nagai-close" aria-label="Close">&times;</button>
-    </div>
+  <!-- detail readout — opens when a star (person) or project is tapped -->
+  <div class="modal" id="modal">
+    <div class="card"><button class="x" aria-label="Close">✕</button><div class="card-body"></div></div>
   </div>
 
   <script>
   /* ============================================================
-     Sound — Tone.js sampled piano, with a tiny Web Audio fallback
-     so a click always makes a noise even if the CDN/samples fail.
+     Audio — one shared Web Audio context + master bus (compressor).
      ============================================================ */
-  const Sound = (() => {
-    let ac = null, sampler = null, ready = false, started = false;
-
+  const Audio = (() => {
+    let ac = null, bus = null;
     function ctx() {
-      if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) ac = new AC(); }
+      if (!ac) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        ac = new AC();
+        const comp = ac.createDynamicsCompressor();
+        comp.threshold.value = -12; comp.ratio.value = 12;
+        comp.attack.value = 0.003; comp.release.value = 0.2;
+        bus = ac.createGain(); bus.gain.value = 0.6;
+        bus.connect(comp); comp.connect(ac.destination);
+      }
       return ac;
     }
-    function buildSampler() {
-      if (sampler || typeof Tone === 'undefined') return;
-      sampler = new Tone.Sampler({
-        urls: {
-          A1: 'A1.mp3', C2: 'C2.mp3', 'D#2': 'Ds2.mp3', 'F#2': 'Fs2.mp3', A2: 'A2.mp3',
-          C3: 'C3.mp3', 'D#3': 'Ds3.mp3', 'F#3': 'Fs3.mp3', A3: 'A3.mp3',
-          C4: 'C4.mp3', 'D#4': 'Ds4.mp3', 'F#4': 'Fs4.mp3', A4: 'A4.mp3',
-          C5: 'C5.mp3', 'D#5': 'Ds5.mp3', 'F#5': 'Fs5.mp3', A5: 'A5.mp3',
-          C6: 'C6.mp3', 'D#6': 'Ds6.mp3', 'F#6': 'Fs6.mp3', A6: 'A6.mp3'
-        },
-        baseUrl: 'https://tonejs.github.io/audio/salamander/',
-        release: 1,
-        onload: () => { ready = true; }
-      }).toDestination();
-      sampler.volume.value = -7;
+    return {
+      ctx,
+      bus() { ctx(); return bus; },
+      start() { const c = ctx(); if (c && c.state === 'suspended') c.resume(); },
+    };
+  })();
+  /* ============================================================
+     Engine — a continuous generative track the grid plays INTO. OURS: an
+     original French-touch loop (112 BPM, B-minor, a lush i–VI–III–VII vamp:
+     Bm9 → Gmaj7 → Dmaj7 → A7) built on the same vocoder-hook / saw-pad / plate
+     / dry-disco-drums machinery the genre is made of (Daft Punk · L'Impératrice).
+     A grid touch QUANTIZES to the next 8th-note and snaps to the chord sounding
+     then, so every touch lands in the pocket and in key. Live-cell density
+     opens/closes the pad filter — the simulation breathes the music. Shares the
+     one Audio context; gesture-gated.
+     ============================================================ */
+  const Engine = (() => {
+    const f = (m) => 440 * Math.pow(2, (m - 69) / 12);          // MIDI → Hz
+    const BPM = 112, SPB = 60 / BPM;                           // a bright French-touch disco pulse
+    // B-natural-minor across ~3 octaves → every grid touch is diatonic to the loop.
+    const SCALE = [47,49,50,52,54,55,57,59,61,62,64,66,67,69,71,73,74,76,78,79,81,83].map(f);
+    // the 4-bar cycle: a descending bass spine (B→G→D→A) under lush extended voicings —
+    // i–VI–III–VII, the beloved bittersweet French-touch loop. One chord per bar.
+    const CYCLE = [
+      { bass: 47, pad: [50,54,57,61] },                        // Bm9    (B · D F# A C#)
+      { bass: 43, pad: [47,50,54,57] },                        // Gmaj9  (G · B D F# A)
+      { bass: 50, pad: [54,57,61,64] },                        // Dmaj9  (D · F# A C# E)
+      { bass: 45, pad: [57,61,64,67] },                        // A7     (A · C# E G)  → lifts back to Bm
+    ];
+    // the vocoder hook melody — one 16-beat phrase = the 4-bar cycle. Arcs up over Bm/G,
+    // then settles down through the A7 turnaround back into the loop.
+    const MELODY = [
+      {m:66,b:1},{m:69,b:1},{m:71,b:2},                        // F#4 A4 B4   (over Bm)
+      {m:69,b:0.5},{m:71,b:0.5},{m:74,b:1},{m:71,b:2},         // A4 B4 D5 B4 (over G)
+      {m:69,b:1},{m:66,b:1},{m:69,b:2},                        // A4 F#4 A4   (over D)
+      {m:67,b:0.5},{m:66,b:0.5},{m:64,b:1},{m:66,b:1},{m:null,b:1},  // G4 F#4 E4 F#4 ·rest (over A7)
+    ];
+
+    let c = null, master = null, plate = null, padBus = null, padFilter = null, vocBus = null, voiceBus = null;
+    const pad = [], lowPad = []; let lowPadGain = null;
+    let _on = false, timer = null, nextBar = 0, bar = 0, anchor = 0, lastVoc = f(66);
+
+    function noise(dur) {
+      const buf = c.createBuffer(1, Math.max(1, (c.sampleRate * dur) | 0), c.sampleRate);
+      const d = buf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      const s = c.createBufferSource(); s.buffer = buf; return s;
+    }
+    function plateIR(decay) {                                   // EMT-140-ish plate: warm, intimate tail
+      const sr = c.sampleRate, len = Math.round(decay * sr), ir = c.createBuffer(2, len, sr), base = Math.pow(1/1000, 1/len);
+      for (let ch = 0; ch < 2; ch++) { const data = ir.getChannelData(ch);
+        for (let j = 0; j < len; j++) data[j] = (Math.random()*2-1) * Math.pow(base, j) * (1 - Math.exp(-j/(sr*0.004))); }
+      return ir;
     }
 
-    async function start() {
-      buildSampler();
-      if (typeof Tone !== 'undefined') {
-        if (!started) { try { await Tone.start(); started = true; } catch (e) {} }
-      } else {
-        const c = ctx(); if (c && c.state === 'suspended') c.resume();
+    function unlock() {
+      if (c) { Audio.start(); return; }
+      c = Audio.ctx(); if (!c) return;
+      master = c.createGain(); master.gain.value = 0.0001; master.connect(Audio.bus());
+      const conv = c.createConvolver(); conv.buffer = plateIR(1.9);
+      const wet = c.createGain(); wet.gain.value = 0.32; conv.connect(wet); wet.connect(master);
+      plate = c.createGain(); plate.connect(conv);
+      // string pad bed → warm lowpass (+ a slow breathing LFO) → master + plate
+      padBus = c.createGain(); padBus.gain.value = 0.16;
+      padFilter = c.createBiquadFilter(); padFilter.type = 'lowpass'; padFilter.frequency.value = 1100; padFilter.Q.value = 0.4;
+      padBus.connect(padFilter); padFilter.connect(master); padFilter.connect(plate);
+      const lfo = c.createOscillator(); lfo.frequency.value = 0.07;
+      const lg = c.createGain(); lg.gain.value = 220; lfo.connect(lg); lg.connect(padFilter.frequency); lfo.start();
+      vocBus = c.createGain(); vocBus.gain.value = 0.22; vocBus.connect(master); vocBus.connect(plate);
+      voiceBus = c.createGain(); voiceBus.gain.value = 0.8; voiceBus.connect(master); voiceBus.connect(plate);
+      startPad();
+    }
+
+    function setEnabled(on) {
+      _on = on; if (!c) return;
+      const t = c.currentTime;
+      master.gain.cancelScheduledValues(t);
+      master.gain.setTargetAtTime(on ? 0.55 : 0.0001, t, 0.4);
+      if (on) { Audio.start(); start(); } else stop();
+    }
+
+    function setDensity(d) {                                    // live-cell % opens/closes the pad warmth
+      if (!c) return;
+      padFilter.frequency.setTargetAtTime(800 * Math.pow(5, Math.min(1, d * 5)), c.currentTime, 0.6);
+    }
+
+    // a grid touch = a vocoder stab, QUANTIZED to the next 8th-note and snapped to the
+    // chord sounding at that moment → every touch lands in the pocket and in key.
+    function note(col, row, cols, rows) {
+      if (!c || !_on) return;
+      const now = c.currentTime, eighth = SPB / 2;
+      let q = anchor + Math.ceil((now - anchor - 0.002) / eighth) * eighth; if (q < now) q = now;
+      const barAtQ = Math.max(0, Math.floor((q - anchor) / (SPB * 4)));
+      const sIdx = Math.round((1 - row / Math.max(1, rows - 1)) * (SCALE.length - 1));
+      const base = SCALE[Math.max(0, Math.min(SCALE.length - 1, sIdx))];
+      const padv = CYCLE[barAtQ % CYCLE.length].pad;
+      const above = padv.map(f).filter((hz) => hz > base * 1.01).slice(0, 2);
+      touchVoc(base, q, 0.5);
+      above.forEach((hz, i) => touchVoc(hz, q + 0.02 * (i + 1), 0.26 - i * 0.08));
+    }
+    function touchVoc(freq, t, peak) {                          // bright robot-vocal stab
+      const carrier = c.createGain();
+      for (const d of [-6, 0, 6]) { const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = freq; o.detune.value = d; o.connect(carrier); o.start(t); o.stop(t + 0.9); }
+      const out = c.createGain();
+      for (const fg of [[700,1],[1150,0.85],[2600,0.55]]) { const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = fg[0]; bp.Q.value = 5.5; const gg = c.createGain(); gg.gain.value = fg[1]; carrier.connect(bp); bp.connect(gg); gg.connect(out); }
+      const env = c.createGain();
+      env.gain.setValueAtTime(0.0001, t); env.gain.exponentialRampToValueAtTime(peak, t + 0.012); env.gain.exponentialRampToValueAtTime(peak * 0.4, t + 0.28); env.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
+      out.connect(env); env.connect(voiceBus);
+    }
+
+    // ── transport (lookahead scheduler on the audio clock — tight + laid-back) ──
+    function start() {
+      if (timer) return;
+      nextBar = c.currentTime + 0.15; anchor = nextBar; bar = 0;
+      timer = setInterval(tick, 60);
+    }
+    function stop() { if (timer) { clearInterval(timer); timer = null; } }
+    function tick() {
+      if (!c || !_on) return;
+      while (nextBar < c.currentTime + 0.6) {
+        scheduleBar(nextBar, bar);
+        if (bar % 4 === 0) scheduleMelody(nextBar);
+        nextBar += SPB * 4; bar++;
       }
     }
+    function scheduleBar(t0, b) {
+      const ch = CYCLE[b % CYCLE.length];
+      retunePad(ch);
+      bassV(t0 + 0.01, f(ch.bass)); bassV(t0 + 2 * SPB + 0.01, f(ch.bass));
+      kick(t0 + 0.012, 0.5); kick(t0 + 2 * SPB + 0.012, 0.42); kick(t0 + 2.5 * SPB + 0.012, 0.16);
+      snare(t0 + 1 * SPB + 0.018, 0.3); snare(t0 + 3 * SPB + 0.018, 0.3);
+      for (let e = 0; e < 8; e++) { const swing = e % 2 ? SPB * 0.5 * 0.12 : 0; hat(t0 + e * (SPB / 2) + swing, e % 2 === 0 ? 0.06 : 0.035); }
+    }
+    function scheduleMelody(t0) {
+      let t = t0;
+      for (const nn of MELODY) { const dur = nn.b * SPB; if (nn.m !== null) vocoder(f(nn.m), t, dur * 0.92, 0.5); t += dur; }
+    }
 
-    const SEMI = { C: -9, 'C#': -8, D: -7, 'D#': -6, E: -5, F: -4, 'F#': -3, G: -2, 'G#': -1, A: 0, 'A#': 1, B: 2 };
-    function freqOf(note) {
-      const m = note.match(/^([A-G]#?)(\d)$/); if (!m) return 440;
-      const semis = SEMI[m[1]] + (parseInt(m[2], 10) - 4) * 12; // relative to A4
-      return 440 * Math.pow(2, semis / 12);
+    // ── voices ──
+    function startPad() {
+      const tones = CYCLE[0].pad;
+      for (let i = 0; i < tones.length; i++) for (const det of [-5, 5]) {
+        const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f(tones[i]); o.detune.value = det;
+        const g = c.createGain(); g.gain.value = 0.07; o.connect(g); g.connect(padBus); o.start(); pad.push(o);
+      }
+      lowPadGain = c.createGain(); lowPadGain.gain.value = 0.1;
+      const llp = c.createBiquadFilter(); llp.type = 'lowpass'; llp.frequency.value = 280; lowPadGain.connect(llp); llp.connect(master);
+      for (const det of [-6, 6]) { const o = c.createOscillator(); o.type = 'triangle'; o.frequency.value = f(CYCLE[0].bass); o.detune.value = det; o.connect(lowPadGain); o.start(); lowPad.push(o); }
     }
-    function fallback(note) {
-      const c = ctx(); if (!c) return;
-      const t = c.currentTime, o = c.createOscillator(), g = c.createGain();
-      o.type = 'triangle'; o.frequency.value = freqOf(note);
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.18, t + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
-      o.connect(g).connect(c.destination);
-      o.start(t); o.stop(t + 0.85);
+    function retunePad(ch) {
+      const t = c.currentTime;
+      pad.forEach((o, i) => o.frequency.setTargetAtTime(f(ch.pad[(i >> 1) % ch.pad.length]), t, 0.4));
+      lowPad.forEach((o) => o.frequency.setTargetAtTime(f(ch.bass), t, 0.4));
     }
-    function play(note) {
-      if (sampler && ready) { try { sampler.triggerAttackRelease(note, '8n'); return; } catch (e) {} }
-      fallback(note);
+    function vocoder(freq, t, dur, peak) {                      // VSM201-style lead w/ portamento
+      const carrier = c.createGain();
+      for (const d of [-7, 0, 7]) { const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(lastVoc, t); o.frequency.exponentialRampToValueAtTime(freq, t + 0.06); o.detune.value = d; o.connect(carrier); o.start(t); o.stop(t + dur + 0.1); }
+      lastVoc = freq;
+      const out = c.createGain();
+      for (const fg of [[420,1],[900,0.7],[2300,0.45]]) { const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = fg[0]; bp.Q.value = 6; const gg = c.createGain(); gg.gain.value = fg[1]; carrier.connect(bp); bp.connect(gg); gg.connect(out); }
+      const env = c.createGain();
+      env.gain.setValueAtTime(0.0001, t); env.gain.exponentialRampToValueAtTime(peak, t + 0.05); env.gain.setValueAtTime(peak, t + dur * 0.7); env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      out.connect(env); env.connect(vocBus);
     }
-    return { start, play, preload: buildSampler };
+    function bassV(t, freq) {                                   // round electric bass on the vamp
+      const o = c.createOscillator(); o.type = 'triangle'; o.frequency.value = freq;
+      const sub = c.createOscillator(); sub.type = 'sine'; sub.frequency.value = freq;
+      const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = freq * 6; lp.Q.value = 1;
+      const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.42, t + 0.02); g.gain.exponentialRampToValueAtTime(0.12, t + 0.4); g.gain.exponentialRampToValueAtTime(0.0001, t + SPB * 1.6);
+      o.connect(lp); sub.connect(lp); lp.connect(g); g.connect(master);
+      o.start(t); sub.start(t); o.stop(t + SPB * 1.7); sub.stop(t + SPB * 1.7);
+    }
+    function kick(t, peak) {                                    // dry, dead kick
+      const o = c.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(115, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.09);
+      const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.26);
+      o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.28);
+    }
+    function snare(t, peak) {                                   // soft brushed backbeat, whisper of plate
+      const o = c.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(185, t); o.frequency.exponentialRampToValueAtTime(140, t + 0.08);
+      const og = c.createGain(); og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(peak * 0.5, t + 0.004); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+      o.connect(og); og.connect(master); o.start(t); o.stop(t + 0.14);
+      const s = noise(0.16); const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1700;
+      const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+      s.connect(hp); hp.connect(g); g.connect(master); g.connect(plate); s.start(t); s.stop(t + 0.16);
+    }
+    function hat(t, peak) {
+      const s = noise(0.05); const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 8500;
+      const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
+      s.connect(hp); hp.connect(g); g.connect(master); s.start(t); s.stop(t + 0.05);
+    }
+
+    // a breaking-wave whoosh for the footer ocean — filtered noise that swells + recedes.
+    function wave() {
+      if (!c) return;
+      const t = c.currentTime;
+      const s = noise(1.3); const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 1.2;
+      lp.frequency.setValueAtTime(350, t); lp.frequency.exponentialRampToValueAtTime(2600, t + 0.28); lp.frequency.exponentialRampToValueAtTime(300, t + 1.0);
+      const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.3, t + 0.2); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+      s.connect(lp); lp.connect(g); g.connect(master); s.start(t); s.stop(t + 1.3);
+    }
+
+    return { unlock, setEnabled, setDensity, note, wave };
   })();
 
   /* ============================================================
-     The grid — Conway's Game of Life that you can also play.
-     Hover highlights a cell; click/drag seeds cells + plays notes.
+     The grid — Conway's Game of Life you can also play. Runs on a uniform
+     lattice; live cells render edge-to-edge so connected cells fuse into
+     their actual shapes (Tetris-style), all in one flat light blue.
      ============================================================ */
   (() => {
-    const SZ = 40, STEP = 600, FILL = 0.12;
-    const PENTA = ['C', 'D', 'E', 'G', 'A']; // C-major pentatonic — always musical
-    const GLIDER = [[0,1,0],[0,0,1],[1,1,1]];
+    const STEP = 4500;                                // one Conway generation every STEP ms — discrete steps
+    // Curated Conway life — gliders drift, oscillators pulse, still-lifes anchor; a seed
+    // of these reads as a living city over negative space. NO random sprinkle: a lone cell
+    // has <2 neighbours and dies next tick (the "orphan flicker" that reads clunky), so we
+    // seed ONLY coherent life. The base glider is rotated into all four travel directions.
+    const G0 = [[1,0],[2,1],[0,2],[1,2],[2,2]];
+    const rot = (p) => p.map(([cx, ry]) => [2 - ry, cx]);
+    const GLIDERS = [G0, rot(G0), rot(rot(G0)), rot(rot(rot(G0)))];
+    const OSC = [
+      [[0,0],[1,0],[2,0]],                                            // blinker
+      [[1,0],[2,0],[3,0],[0,1],[1,1],[2,1]],                          // toad
+      [[0,0],[1,0],[0,1],[1,1],[2,2],[3,2],[2,3],[3,3]],              // beacon
+    ];
+    const STILL = [
+      [[0,0],[1,0],[0,1],[1,1]],                                      // block
+      [[1,0],[2,0],[0,1],[3,1],[1,2],[2,2]],                          // beehive
+    ];
+    const pick = (a) => a[(Math.random() * a.length) | 0];
 
     const canvas = document.getElementById('grid');
     const ctx = canvas.getContext('2d');
 
-    let cols = 0, rows = 0, grid = [], W = 0, H = 0, dpr = 1;
-    let last = 0, gen = 0, pop = 0;
+    let U = 28;                                        // uniform lattice cell
+    let cols = 0, rows = 0, grid = [];
+    let W = 0, H = 0, dpr = 1, last = 0, gen = 0, pop = 0;
     let hover = null, pressing = false, lastCell = '';
     let ripples = [];
 
-    /* ---- Echo locator: trail + ping ---- */
-    let trail = [];
-    let lastPing = '';
-    let prevPX = 0, prevPY = 0, prevPT = 0;
-    function trailPing(cell, speed) {
-      const ac = pkCtx();
-      if (!ac) return;
-      if (ac.state === 'suspended') { ac.resume(); return; }
-      const c = Math.min(Math.max(speed, 0.05), 3);
-      const BASE = [261.63, 293.66, 329.63, 392.00, 440.00];
-      const idx = Math.min(Math.floor(c / 3 * 5), 4);
-      const oct = 3 + Math.floor(c / 3 * 2.5);
-      const freq = BASE[idx] * Math.pow(2, oct - 4);
-      const t = ac.currentTime;
-      const o = ac.createOscillator();
-      const g = ac.createGain();
-      o.type = 'sine';
-      o.frequency.value = freq;
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.04, t + 0.005);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
-      o.connect(g).connect(ac.destination);
-      o.start(t); o.stop(t + 0.1);
+    const LINE = 'rgba(110,168,255,0.10)';             // faint cool rulings on the dark ground
+    const CELL = '#5fa8ff';                            // one luminous blue — so it covers the
+                                                       // gridlines under it and connected cells fuse into one shape
+
+    // ---- The footer — Hiroshi Nagai's night cityscape (nagai.webp), PIXELATED and pasted
+    // CENTERED at its true size (the jet lives in the middle), then the city / sea / sunset /
+    // sky are EXTENDED outward to fill the full width. The extension copies plane-free margin
+    // columns of the pixelated art at random: every column shares the same horizon/sea/sky
+    // rows, so those bands stay continuous while the lit windows vary → a NEW matching skyline,
+    // no stretch, no repeated planes. ----
+    const RMOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const FOOT_PX = 6;                                 // chunky pixel size
+    let footerH = 0, oceanY = 0, waveR0 = 0;           // footer height + its top (doc px) + Conway-guard row
+    const citygap = document.getElementById('citygap');
+    const cityImg = new Image();
+    let cityReady = false, cityCanvas = null;          // offscreen low-res (= pixelated) render of the art
+    cityImg.onload = () => { cityReady = true; resize(); };
+    cityImg.src = 'nagai.webp';
+    function buildCity() {
+      if (!cityReady || !W || footerH <= 0) return;
+      const ocw = Math.max(1, Math.ceil(W / FOOT_PX)), och = Math.max(1, Math.ceil(footerH / FOOT_PX));
+      const oc = cityCanvas || (cityCanvas = document.createElement('canvas'));
+      oc.width = ocw; oc.height = och;
+      const o = oc.getContext('2d'); o.imageSmoothingEnabled = false;
+      o.clearRect(0, 0, ocw, och);
+      // 1) pixelate the painting at its TRUE aspect and paste it CENTERED (plane in the middle)
+      const iw = cityImg.width, ih = cityImg.height;
+      const artCols = Math.min(ocw, Math.max(1, Math.round(och * iw / ih)));
+      const x0 = (ocw - artCols) >> 1, x1 = x0 + artCols;
+      o.drawImage(cityImg, 0, 0, iw, ih, x0, 0, artCols, och);
+      if (x0 <= 0) return;                                 // art already fills the width
+      // 2) EXTEND the bands into the side gaps by copying plane-free margin columns of the art
+      const img = o.getImageData(0, 0, ocw, och), D = img.data;
+      const marginW = Math.max(2, Math.round(artCols * 0.35));
+      const copyCol = (src, dst) => {
+        for (let y = 0; y < och; y++) { const s = (y * ocw + src) * 4, d = (y * ocw + dst) * 4; D[d] = D[s]; D[d + 1] = D[s + 1]; D[d + 2] = D[s + 2]; D[d + 3] = D[s + 3]; }
+      };
+      for (let dx = x0 - 1; dx >= 0; dx--) copyCol(x0 + ((Math.random() * marginW) | 0), dx);        // left gap ← left margin
+      for (let dx = x1; dx < ocw; dx++) copyCol(x1 - 1 - ((Math.random() * marginW) | 0), dx);       // right gap ← right margin
+      o.putImageData(img, 0, 0);
+    }
+    function drawFooter(sy) {
+      if (!cityReady || !cityCanvas) return;
+      const dyDoc = oceanY;
+      if (!(dyDoc < sy + H && dyDoc + footerH > sy)) return;
+      const prev = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(cityCanvas, 0, 0, cityCanvas.width, cityCanvas.height,
+        0, dyDoc, cityCanvas.width * FOOT_PX, cityCanvas.height * FOOT_PX);   // blit the chunky pixels full-bleed
+      ctx.imageSmoothingEnabled = prev;
+      // soften the seam where the dark sky meets the grid above
+      const grd = ctx.createLinearGradient(0, dyDoc, 0, dyDoc + 56);
+      grd.addColorStop(0, '#080b12'); grd.addColorStop(1, 'rgba(8,11,18,0)');
+      ctx.fillStyle = grd; ctx.fillRect(0, dyDoc, W, 56);
     }
 
-    /* ---- Voltorb easter egg ---- */
-    const pk = { r:0, c:0, anger:0, visible:false, locked:false, lastR:-1, lastC:-1,
-      appearAt:0, vanishAt:0, shakeX:0, shakeY:0, shakeStart:0, shakeDur:0 };
-    let explParticles = [];
-    let nagaiVisible = false;
-    let quoteTimer = 0;
-    let pkAudio = null;
-    function pkCtx() {
-      if (!pkAudio) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) pkAudio = new AC(); }
-      if (pkAudio && pkAudio.state === 'suspended') pkAudio.resume();
-      return pkAudio;
+    // stamp a coordinate-pair pattern at (r0,c0), wrapped, kept above the wave band (lim rows)
+    function stamp(g, pts, r0, c0, lim) {
+      for (const [dc, dr] of pts) g[((r0 + dr) % lim + lim) % lim][((c0 + dc) % cols + cols) % cols] = 1;
     }
-    function pkRand(a,b) { return a + Math.random() * (b-a); }
-
-    const noteFor = (r, c) => {
-      const deg = c + (rows - 1 - r);                  // diagonal pitch gradient
-      const oct = Math.min(6, 3 + Math.floor(deg / PENTA.length));
-      return PENTA[deg % PENTA.length] + oct;
-    };
-
-    function sprinkle(g, n) {
-      for (let i = 0; i < n; i++) g[(Math.random()*rows)|0][(Math.random()*cols)|0] = 1;
+    function seedLife(g, n, lim) {                          // gliders ×2, oscillators, still-lifes
+      for (let i = 0; i < n * 2; i++) stamp(g, pick(GLIDERS), (Math.random()*lim)|0, (Math.random()*cols)|0, lim);
+      for (let i = 0; i < n; i++) stamp(g, pick(OSC), (Math.random()*lim)|0, (Math.random()*cols)|0, lim);
+      for (let i = 0; i < n; i++) stamp(g, pick(STILL), (Math.random()*lim)|0, (Math.random()*cols)|0, lim);
     }
-    function stamp(g, pat, oy, ox) {
-      for (let y = 0; y < pat.length; y++) for (let x = 0; x < pat[y].length; x++)
-        if (pat[y][x]) g[(oy+y+rows)%rows][(ox+x+cols)%cols] = 1;
-    }
-    function fresh(c, r) {
-      cols = c; rows = r;
-      const g = Array.from({ length: r }, () => new Array(c).fill(0));
-      sprinkle(g, (c * r * FILL) | 0);
-      for (let i = 0; i < 3; i++) stamp(g, GLIDER, (Math.random()*r)|0, (Math.random()*c)|0);
+    function fresh() {
+      const g = Array.from({ length: rows }, () => new Array(cols).fill(0));
+      const lim = waveR0 > 1 ? waveR0 : rows;              // keep life above the wave band
+      seedLife(g, Math.max(3, ((cols * lim) / 1500) | 0), lim);
       return g;
     }
 
     function resize() {
       W = window.innerWidth; H = window.innerHeight;
       dpr = window.devicePixelRatio || 1;
+      U = Math.min(32, Math.max(26, Math.round(W / 52)));   // uniform lattice cell
       canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
       canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const c = Math.ceil(W / SZ) + 1, r = Math.ceil(H / SZ) + 1;
-      if (c !== cols || r !== rows) { grid = fresh(c, r); if (pk.r >= r) pk.r = r - 2; if (pk.c >= c) pk.c = c - 2; }
+
+      // the lattice spans the whole DOCUMENT (taller than the screen) so scrolling
+      // reveals more of it; the canvas stays viewport-fixed and is drawn offset.
+      // the city footer is a BOUNDED band at the page bottom — the painting sits centered at
+      // its true size and the city/sea/sky are extended outward to fill the width (buildCity).
+      footerH = Math.round(Math.min(270, Math.max(210, H * 0.3)));
+      if (citygap) citygap.style.height = footerH + 'px';
+
+      const docH = Math.max(H, document.documentElement.scrollHeight);
+      cols = Math.ceil(W / U) + 1;
+      rows = Math.ceil(docH / U) + 1;
+      oceanY = docH - footerH;                                     // anchor the footer to the TRUE document bottom
+      waveR0 = Math.max(2, Math.floor(oceanY / U));
+      buildCity();
+      grid = fresh();
     }
 
     function step() {
@@ -425,277 +719,57 @@
       }
       grid = n; pop = live;
 
-      // Keep the field perpetually alive: reseed if it's dying, otherwise
-      // gentle "rain" + the occasional glider. Both stop above a ceiling so
-      // it never clutters up behind the text.
+      // the live-cell % breathes the music — open/close the pad filter every generation
       const area = cols * rows;
-      if (pop < area * 0.015) sprinkle(grid, (area * 0.05) | 0);
-      else if (pop < area * 0.13) sprinkle(grid, Math.max(2, (area * 0.003) | 0));
-      if (gen % 3 === 0 && pop < area * 0.13) stamp(grid, GLIDER, (Math.random()*rows)|0, (Math.random()*cols)|0);
+      Engine.setDensity(area ? pop / area : 0);
+
+      // hold a calm floor with structured LIFE, not noise: a flurry of gliders rescues a
+      // dying field; a gentle drift keeps it flowing. Free Conway settles to ~3-4% ash.
+      const lim = waveR0 > 1 ? waveR0 : rows;
+      if (pop < area * 0.018) for (let i = 0; i < Math.max(4, (area / 2200) | 0); i++) stamp(grid, pick(GLIDERS), (Math.random()*lim)|0, (Math.random()*cols)|0, lim);
+      else if (gen % 5 === 0 && pop < area * 0.04) stamp(grid, pick(GLIDERS), (Math.random()*lim)|0, (Math.random()*cols)|0, lim);
     }
 
     function draw(now) {
       ctx.clearRect(0, 0, W, H);
-
-      // live cells (subtle per-gen shimmer)
-      for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) if (grid[y][x]) {
-        ctx.fillStyle = (x + y + gen) % 2 ? 'rgba(59,111,224,0.14)' : 'rgba(59,111,224,0.10)';
-        ctx.fillRect(x*SZ, y*SZ, SZ, SZ);
-      }
-
-      // hovered cell
-      if (hover) {
-        ctx.fillStyle = 'rgba(236,0,140,0.10)';
-        ctx.fillRect(hover.c*SZ, hover.r*SZ, SZ, SZ);
-        ctx.strokeStyle = 'rgba(236,0,140,0.45)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(hover.c*SZ + 0.5, hover.r*SZ + 0.5, SZ - 1, SZ - 1);
-      }
-
-      // play ripples + flashes
-      ripples = ripples.filter(p => now - p.t < 600);
-      for (const p of ripples) {
-        const k = (now - p.t) / 600;                  // 0 → 1
-        const cx = (p.c + 0.5) * SZ, cy = (p.r + 0.5) * SZ;
-        ctx.fillStyle = 'rgba(236,0,140,' + (0.5 * (1 - k)) + ')';
-        ctx.fillRect(p.c*SZ, p.r*SZ, SZ, SZ);
-        ctx.beginPath();
-        ctx.arc(cx, cy, k * SZ * 3.5, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(236,0,140,' + (0.5 * (1 - k)) + ')';
-        ctx.lineWidth = 2; ctx.stroke();
-      }
-
-      // echo trail
-      trail = trail.filter(p => now - p.t < 1500);
-      for (const p of trail) {
-        const a = 1 - (now - p.t) / 1500;
-        const s = 6;
-        ctx.fillStyle = 'rgba(236,0,140,' + (a * 0.55) + ')';
-        ctx.fillRect(p.c * SZ + (SZ - s) / 2, p.r * SZ + (SZ - s) / 2, s, s);
-      }
-
-      // pokemon / explosion
-      if (explParticles.length) { drawExplosion(now); }
-      pkUpdate(now);
-      if (!nagaiVisible && pk.visible) { drawVoltorb(); }
-    }
-
-    /* ---- Voltorb helpers ---- */
-    function pkSpawn() {
-      let t = 0;
-      do {
-        pk.r = ((Math.random() * (rows - 6) + 3)|0);
-        pk.c = ((Math.random() * (cols - 6) + 3)|0);
-        t++;
-      } while (t < 30 && Math.abs(pk.r - pk.lastR) + Math.abs(pk.c - pk.lastC) < 8);
-      pk.lastR = pk.r; pk.lastC = pk.c;
-      pk.shakeX = 0; pk.shakeY = 0;
-    }
-    function pkSound(lv) {
-      const ac = pkCtx(); if (!ac) return;
-      const t = ac.currentTime;
-      function bz(type,freq,vol,dur,sweep) {
-        const o = ac.createOscillator(), g = ac.createGain();
-        o.type = type; o.frequency.setValueAtTime(freq, t);
-        if (sweep != null) o.frequency.exponentialRampToValueAtTime(sweep, t + dur);
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.exponentialRampToValueAtTime(vol, t + 0.005);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-        o.connect(g).connect(ac.destination);
-        o.start(t); o.stop(t + dur + 0.01);
-      }
-      if (lv < 4) {
-        const p = [{type:'triangle',f:180,v:0.06,d:0.12},{type:'square',f:130,v:0.10,d:0.20},{type:'sawtooth',f:90,v:0.15,d:0.35}][lv-1];
-        bz(p.type,p.f,p.v,p.d,null);
-      } else { bz('sawtooth',100,0.12,0.5,null); bz('sine',300,0.25,0.6,50); }
-    }
-    function pkAnger() {
-      if (pk.locked) return;
-      pk.locked = true; pk.anger++;
-      pkSound(pk.anger);
-      if (pk.anger >= 4) { pkExplode(); return; }
-      pk.lastR = pk.r; pk.lastC = pk.c;
-      let nr = pk.r + (((Math.random()*8+2)|0)) * (Math.random()<0.5?-1:1);
-      let nc = pk.c + (((Math.random()*8+2)|0)) * (Math.random()<0.5?-1:1);
-      pk.r = Math.max(2, Math.min(rows-3, nr));
-      pk.c = Math.max(2, Math.min(cols-3, nc));
-      for (let dr=-1;dr<=1;dr++) for (let dc=-1;dc<=1;dc++)
-        grid[(pk.r+dr+rows)%rows][(pk.c+dc+cols)%cols] = 1;
-      pk.shakeStart = performance.now(); pk.shakeDur = 150 + pk.anger * 50;
-      pk.vanishAt = performance.now() + pkRand(5000, 9000);
-      setTimeout(() => { pk.locked = false; }, pk.shakeDur);
-    }
-    function pkExplode() {
-      pk.visible = false; pk.locked = true;
-      const cx = pk.c * SZ + SZ/2, cy = pk.r * SZ + SZ/2;
-      for (let i = 0; i < 80; i++) {
-        const a = Math.random() * Math.PI * 2, sp = 80 + Math.random() * 160;
-        explParticles.push({ x:cx, y:cy, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp,
-          r:3+Math.random()*5, color: Math.random()<0.5?'#EC008C':'#3B6FE0',
-          life:400+Math.random()*400, born:performance.now() });
-      }
-      for (let dr=-3;dr<=3;dr++) for (let dc=-3;dc<=3;dc++)
-        if (Math.random()<0.4) grid[(pk.r+dr+rows)%rows][(pk.c+dc+cols)%cols] = 1;
-      setTimeout(() => { showNagaiImage(); pk.locked = false; }, 450);
-    }
-    function pkUpdate(now) {
-      if (pk.shakeStart && pk.shakeDur) {
-        const e = now - pk.shakeStart;
-        if (e < pk.shakeDur) { const d=pk.anger*1.2; pk.shakeX=(Math.random()-0.5)*d*2; pk.shakeY=(Math.random()-0.5)*d*2; }
-        else { pk.shakeX=0; pk.shakeY=0; pk.shakeStart=0; pk.shakeDur=0; }
-      }
-      if (nagaiVisible || pk.anger >= 3) return;
-      if (!pk.appearAt) pk.appearAt = now + pkRand(3000, 6000);
-      if (!pk.visible && now > pk.appearAt) { pkSpawn(); pk.visible = true; pk.vanishAt = now + pkRand(6000, 12000); }
-      if (pk.visible && now > pk.vanishAt) { pk.visible = false; pk.anger = 0; pk.appearAt = now + pkRand(4000, 8000); }
-    }
-    function drawVoltorb() {
-      if (!pk.visible || nagaiVisible) return;
-      const cx = pk.c * SZ + SZ/2 + pk.shakeX, cy = pk.r * SZ + SZ/2 + pk.shakeY, r = SZ * 0.38;
+      const sy = window.scrollY || 0;                  // lattice scrolls with the page
       ctx.save();
-      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
-      ctx.fillStyle = pk.anger >= 2 ? '#C62828' : '#E53935'; ctx.fill();
-      ctx.beginPath(); ctx.arc(cx, cy, r-1, Math.PI, 0, false); ctx.closePath();
-      ctx.fillStyle = '#FAFAFA'; ctx.fill();
-      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
-      ctx.strokeStyle = '#37474F'; ctx.lineWidth = 2; ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx - r + 3, cy); ctx.lineTo(cx + r - 3, cy);
-      ctx.strokeStyle = '#37474F'; ctx.lineWidth = 1.5; ctx.stroke();
-      ctx.beginPath(); ctx.arc(cx, cy, 3.5, 0, Math.PI*2);
-      ctx.fillStyle = '#FAFAFA'; ctx.fill();
-      ctx.strokeStyle = '#546E7A'; ctx.lineWidth = 0.5; ctx.stroke();
-      const ey = cy - 5, es = 4.5;
-      ctx.strokeStyle = '#212121';
-      if (pk.anger === 0) {
-        [-1,1].forEach(s => { const ex = cx + s*es;
-          ctx.beginPath(); ctx.arc(ex, ey, 3, 0, Math.PI*2); ctx.fillStyle = '#FFF'; ctx.fill();
-          ctx.fillStyle = '#212121'; ctx.beginPath(); ctx.arc(ex+s*0.5, ey, 1.5, 0, Math.PI*2); ctx.fill(); });
-      } else if (pk.anger === 1) {
-        ctx.lineWidth = 1.5; [-1,1].forEach(s => { const ex=cx+s*es; ctx.beginPath(); ctx.arc(ex,ey,2.5,0.15,Math.PI-0.15); ctx.stroke(); });
-        ctx.lineWidth = 2; ctx.beginPath();
-        ctx.moveTo(cx-es-2, ey-4); ctx.lineTo(cx-es+2, ey-1);
-        ctx.moveTo(cx+es+2, ey-4); ctx.lineTo(cx+es-2, ey-1); ctx.stroke();
-      } else if (pk.anger === 2) {
-        ctx.lineWidth = 2.5; [-1,1].forEach(s => { const ex=cx+s*es; ctx.beginPath(); ctx.moveTo(ex-3, ey+2); ctx.lineTo(ex+3, ey-2); ctx.stroke(); });
-        ctx.lineWidth = 3; ctx.beginPath();
-        ctx.moveTo(cx-es-3, ey-5); ctx.lineTo(cx-es+3, ey);
-        ctx.moveTo(cx+es+3, ey-5); ctx.lineTo(cx+es-3, ey); ctx.stroke();
-      } else {
-        ctx.lineWidth = 2.5; [-1,1].forEach(s => { const ex=cx+s*es;
-          ctx.beginPath(); ctx.moveTo(ex-3, ey-3); ctx.lineTo(ex+3, ey+3);
-          ctx.moveTo(ex+3, ey-3); ctx.lineTo(ex-3, ey+3); ctx.stroke(); });
-      }
-      ctx.restore();
-    }
-    function drawExplosion(now) {
-      explParticles = explParticles.filter(p => now - p.born < p.life);
-      for (const p of explParticles) {
-        const k = (now - p.born) / p.life;
-        ctx.beginPath();
-        ctx.arc(p.x + p.vx * k, p.y + p.vy * k, p.r * (1 - k * 0.5), 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.globalAlpha = 1 - k;
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-    }
-    function showNagaiImage() {
-      if (nagaiVisible) return;
-      const heading = document.querySelector('.brac');
-      if (!heading) return;
-      const r = heading.getBoundingClientRect();
-      const hCX = r.left + r.width / 2, hCY = r.top + r.height / 2;
-      const vCX = W / 2, vCY = H / 2;
-      const frame = document.querySelector('.nagai-frame');
-      if (!frame) return;
-      const tx = hCX - vCX, ty = hCY - vCY;
-      frame.style.transition = 'none';
-      frame.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(0.12)';
-      heading.style.transition = 'opacity 0.5s ease, transform 0.5s cubic-bezier(0.22,1,0.36,1)';
-      heading.style.opacity = '0';
-      heading.style.transform = 'scale(0.3)';
-      const overlay = document.getElementById('nagai-overlay');
-      overlay.style.transition = 'none';
-      overlay.classList.add('active');
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          frame.style.transition = 'transform 0.8s cubic-bezier(0.22,1,0.36,1)';
-          frame.style.transform = 'translate(0,0) scale(1)';
-        });
-      });
-      nagaiVisible = true;
-      quoteTimer = setTimeout(typeQuote, 1100);
-    }
-    function hideNagaiImage() {
-      if (!nagaiVisible) return;
-      clearTimeout(quoteTimer);
-      const q = document.querySelector('.nagai-quote');
-      if (q) {
-        q.textContent = '';
-        q.style.opacity = '';
-        const c = q.querySelector('.nagai-cursor');
-        if (c) c.remove();
-      }
-      nagaiVisible = false;
-      const heading = document.querySelector('.brac');
-      if (heading) {
-        heading.style.opacity = '';
-        heading.style.transform = '';
-      }
-      const frame = document.querySelector('.nagai-frame');
-      const overlay = document.getElementById('nagai-overlay');
-      if (frame && heading) {
-        const r = heading.getBoundingClientRect();
-        const hCX = r.left + r.width / 2, hCY = r.top + r.height / 2;
-        const vCX = W / 2, vCY = H / 2;
-        frame.style.transition = 'transform 0.6s cubic-bezier(0.22,1,0.36,1)';
-        frame.style.transform = 'translate(' + (hCX - vCX) + 'px,' + (hCY - vCY) + 'px) scale(0.12)';
-      }
-      if (overlay) {
-        overlay.style.transition = 'opacity 0.4s ease';
-        overlay.style.opacity = '0';
-      }
-      setTimeout(() => {
-        if (overlay) {
-          overlay.classList.remove('active');
-          overlay.style.transition = '';
-          overlay.style.opacity = '';
-        }
-        if (frame) {
-          frame.style.transition = '';
-          frame.style.transform = '';
-        }
-        if (heading) {
-          heading.style.transition = '';
-        }
-        explParticles = [];
-        pk.anger = 0;
-        pk.locked = false;
-        pk.appearAt = performance.now() + pkRand(4000, 8000);
-        pk.visible = false;
-      }, 700);
-    }
+      ctx.translate(0, -sy);
+      const rv0 = Math.max(0, (sy / U | 0) - 1), rv1 = Math.min(rows, ((sy + H) / U | 0) + 2);
 
-    function typeQuote() {
-      const el = document.querySelector('.nagai-quote');
-      if (!el) return;
-      el.textContent = '';
-      el.style.opacity = '1';
-      const text = 'NEVER SETTLE.';
-      let i = 0;
-      function tick() {
-        if (i < text.length) {
-          el.textContent += text.charAt(i);
-          i++;
-          quoteTimer = setTimeout(tick, 80 + Math.random() * 50);
-        } else {
-          const cursor = document.createElement('span');
-          cursor.className = 'nagai-cursor';
-          cursor.textContent = '_';
-          el.appendChild(cursor);
-        }
+      // uniform lattice lines — only the visible span is stroked
+      ctx.strokeStyle = LINE; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let c = 0; c <= cols; c++) { const x = c * U; ctx.moveTo(x + 0.5, sy); ctx.lineTo(x + 0.5, sy + H); }
+      for (let r = rv0; r <= rv1; r++) { const y = r * U; ctx.moveTo(0, y + 0.5); ctx.lineTo(W, y + 0.5); }
+      ctx.stroke();
+
+      // life — one flat opaque light blue, edge-to-edge so connected cells fuse into
+      // their shape. Each generation just appears (discrete, no fade).
+      ctx.fillStyle = CELL;
+      ctx.shadowColor = CELL; ctx.shadowBlur = 13;        // each shape glows like an ember
+      for (let r = rv0; r < rv1; r++) for (let c = 0; c < cols; c++) {
+        if (grid[r][c]) ctx.fillRect(c * U, r * U, U, U);
       }
-      quoteTimer = setTimeout(tick, 200);
+      ctx.shadowBlur = 0;                                 // reset before everything else
+
+      drawFooter(sy);   // the pixelated Nagai night-city footer at the document bottom
+
+      if (hover) {
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';         // grabbing a shape lights it white-hot
+        const piece = pieceAt(hover.r, hover.c);          // light up the whole connected shape
+        if (piece) for (const j of piece) ctx.fillRect((j % cols) * U, ((j / cols) | 0) * U, U, U);
+        else ctx.fillRect(hover.c * U, hover.r * U, U, U);
+      }
+
+      ripples = ripples.filter(p => now - p.t < 900);
+      for (const p of ripples) {
+        const k = (now - p.t) / 900;
+        ctx.fillStyle = 'rgba(255,46,160,' + (0.38 * (1 - k)) + ')';
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+      }
+
+      ctx.restore();
     }
 
     function loop(now) {
@@ -706,60 +780,93 @@
       } catch (e) { /* keep the loop alive no matter what */ }
     }
 
-    function cellAt(x, y) {
-      const c = Math.floor(x / SZ), r = Math.floor(y / SZ);
+    // px, py are DOCUMENT coords (pageX/pageY); the lattice is uniform so this is O(1)
+    function cellAt(px, py) {
+      if (px < 0 || py < 0) return null;
+      const c = (px / U) | 0, r = (py / U) | 0;
       if (r < 0 || c < 0 || r >= rows || c >= cols) return null;
       return { r, c };
     }
 
-    function playCell(cell) {
-      Sound.play(noteFor(cell.r, cell.c));
-      stamp(grid, GLIDER, cell.r - 1, cell.c - 1);   // a glider streams out of where you played
-      ripples.push({ r: cell.r, c: cell.c, t: performance.now() });
-    }
-
-    // input (read at window level; links opt out)
-    window.addEventListener('pointermove', (e) => {
-      hover = cellAt(e.clientX, e.clientY);
-
-      // echo locator
-      if (!nagaiVisible) {
-        const dx = e.clientX - prevPX, dy = e.clientY - prevPY;
-        const dt = Math.max(e.timeStamp - prevPT, 1);
-        const speed = Math.sqrt(dx * dx + dy * dy) / dt;
-        prevPX = e.clientX; prevPY = e.clientY; prevPT = e.timeStamp;
-        if (hover) {
-          const tLast = trail.length ? trail[trail.length - 1] : null;
-          if (!tLast || tLast.r !== hover.r || tLast.c !== hover.c) {
-            trail.push({ r: hover.r, c: hover.c, t: performance.now() });
-            if (trail.length > 50) trail.shift();
-          }
-          if (grid[hover.r][hover.c] === 1) {
-            const pk = hover.r + ':' + hover.c;
-            if (pk !== lastPing) { lastPing = pk; trailPing(hover, speed); }
-          } else {
-            lastPing = '';
-          }
-        } else {
-          lastPing = '';
+    // the whole connected live shape touching (r,c) — a Conway piece is ONE object
+    function pieceAt(r, c) {
+      if (r < 0 || c < 0 || r >= rows || c >= cols || !grid[r][c]) return null;
+      const seen = new Set([r * cols + c]), stack = [r * cols + c], cells = [];
+      while (stack.length) {
+        const j = stack.pop(), jr = (j / cols) | 0, jc = j % cols; cells.push(j);
+        for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+          if (!dr && !dc) continue;
+          const nr = jr + dr, nc = jc + dc;
+          if (nr < 0 || nc < 0 || nr >= rows || nc >= cols) continue;
+          const id = nr * cols + nc;
+          if (grid[nr][nc] && !seen.has(id)) { seen.add(id); stack.push(id); }
         }
       }
+      return cells;
+    }
 
-      if (pressing && hover) {
-        const key = hover.r + ':' + hover.c;
-        if (key !== lastCell) { lastCell = key; playCell(hover); }
+    // a touch plays the track's lead: Engine.note quantizes to the groove + snaps in key
+    const note = (r, c) => Engine.note(c, r, cols, rows);
+    const ripplePiece = (piece) => { for (const j of piece) ripples.push({ x: (j % cols) * U, y: ((j / cols) | 0) * U, w: U, h: U, t: performance.now() }); }
+    const playPiece = (piece) => { const a = piece.reduce((x, y) => y < x ? y : x); note((a / cols) | 0, a % cols); ripplePiece(piece); };
+    const drawCell = (r, c) => {
+      if (r < 0 || c < 0 || r >= rows || c >= cols || grid[r][c]) return;
+      grid[r][c] = 1; note(r, c); ripples.push({ x: c * U, y: r * U, w: U, h: U, t: performance.now() });
+    };
+    // fill every cell between two pointer samples (Bresenham) so a fast drag draws a SOLID line, not gappy dots
+    function drawLine(r0, c0, r1, c1) {
+      const dr = Math.abs(r1 - r0), dc = Math.abs(c1 - c0), sr = r0 < r1 ? 1 : -1, sc = c0 < c1 ? 1 : -1;
+      let err = dc - dr, r = r0, c = c0;
+      for (;;) {
+        if (!(r === r0 && c === c0)) drawCell(r, c);     // first cell already handled by caller
+        if (r === r1 && c === c1) break;
+        const e2 = 2 * err;
+        if (e2 > -dr) { err -= dr; c += sc; }
+        if (e2 < dc) { err += dc; r += sr; }
+      }
+    }
+
+    let dragR = -1, dragC = -1, drawing = false;
+
+    // The track is gesture-gated (browsers block autoplay) and ON by default — the first
+    // pointer/key gesture arms it. The mute button flips `muted` and fades the bed.
+    let muted = false, armed = false;
+    function arm() { if (armed) return; armed = true; Engine.unlock(); if (!muted) Engine.setEnabled(true); }
+    const muteBtn = document.getElementById('mute');
+    if (muteBtn) muteBtn.addEventListener('click', () => {
+      muted = !muted;
+      muteBtn.textContent = muted ? '♪ muted' : '♪ sound on';
+      muteBtn.classList.toggle('off', muted);
+      muteBtn.setAttribute('aria-label', muted ? 'Unmute' : 'Mute');
+      Engine.unlock(); Engine.setEnabled(!muted);
+    });
+    window.addEventListener('keydown', arm, { once: true });
+
+    // input (read at window level; links + UI controls opt out)
+    window.addEventListener('pointermove', (e) => {
+      if (e.pageY >= oceanY) { hover = null; return; }    // the footer ocean isn't the grid — no highlight there
+      hover = cellAt(e.pageX, e.pageY);
+      if (!pressing || !hover) return;
+      if (drawing) {                                       // continuous draw — fill the gap from last sample
+        drawLine(dragR, dragC, hover.r, hover.c);
+        dragR = hover.r; dragC = hover.c;
+      } else {                                             // started on a shape → play shapes you drag over, once each
+        const piece = pieceAt(hover.r, hover.c);
+        const key = piece ? 'p' + piece.reduce((x, y) => y < x ? y : x) : 'e' + hover.r + ':' + hover.c;
+        if (key !== lastCell) { lastCell = key; if (piece) playPiece(piece); }
       }
     });
     window.addEventListener('pointerdown', (e) => {
-      if (e.target.closest && e.target.closest('a')) return;
-      const cell = cellAt(e.clientX, e.clientY);
+      if (e.target.closest && e.target.closest('a, button, [data-ui], .star, .prow, .modal')) return;
+      arm();
+      if (e.pageY >= oceanY) { Engine.note((Math.random() * cols) | 0, 0, cols, rows); return; }   // click the city → a high shimmer (in key)
+      const cell = cellAt(e.pageX, e.pageY);
       if (!cell) return;
-      if (pk.visible && cell.r === pk.r && cell.c === pk.c && !pk.locked) {
-        Sound.start().then(() => { if (pkAudio) pkAudio.resume(); pkAnger(); });
-        return;
-      }
-      pressing = true; lastCell = cell.r + ':' + cell.c;
-      Sound.start().then(() => { if (pkAudio) pkAudio.resume(); playCell(cell); });
+      pressing = true; dragR = cell.r; dragC = cell.c;
+      const piece = pieceAt(cell.r, cell.c);
+      drawing = !piece;                                    // hit a shape → play it; hit empty → draw mode
+      if (piece) { playPiece(piece); lastCell = 'p' + piece.reduce((x, y) => y < x ? y : x); }
+      else drawCell(cell.r, cell.c);
     });
     const release = () => { pressing = false; lastCell = ''; };
     window.addEventListener('pointerup', release);
@@ -767,12 +874,45 @@
     window.addEventListener('blur', release);
     window.addEventListener('mouseleave', () => { hover = null; });
     window.addEventListener('resize', resize);
+    window.addEventListener('load', resize);          // re-measure once fonts settle the page height
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(resize);   // re-measure once webfonts settle the page height
 
-    Sound.preload();
     resize();
-    pk.appearAt = performance.now() + pkRand(3000, 6000);
-    document.querySelector('.nagai-close').addEventListener('click', hideNagaiImage);
     requestAnimationFrame(loop);
+  })();
+
+  /* ============================================================
+     Detail readout — click a star (person) or a project for the depth:
+     photo, bio, links. Keeps the constellation clean, info one tap away.
+     ============================================================ */
+  (() => {
+    const modal = document.getElementById('modal'); if (!modal) return;
+    const body = modal.querySelector('.card-body');
+    const open = (html) => { body.innerHTML = html; modal.classList.add('open'); };
+    const close = () => modal.classList.remove('open');
+    function personCard(star) {
+      const name = star.querySelector('.lbl b').textContent;
+      const role = star.querySelector('.lbl span').textContent;
+      const img = star.querySelector('.photo img');
+      const photo = img
+        ? `<div class="cphoto"><img src="${img.getAttribute('src')}" alt=""><span class="gov"></span></div>`
+        : `<div class="cphoto"><span class="gov"></span><span class="ph-star"></span></div>`;
+      open(`<div class="top">${photo}<div><h3>${name}</h3><div class="csub">${role} · Cohort 01</div></div></div>
+        <p class="bio">Placeholder bio — a line or two about ${name}: what they build, focus area, where they're from. Real copy drops in here.</p>
+        <div class="links"><a class="chip" href="#">LinkedIn ↗</a><a class="chip" href="#">GitHub ↗</a><a class="chip" href="#">Site ↗</a></div>`);
+    }
+    function projectCard(prow) {
+      const num = prow.querySelector('.idx').textContent;
+      const name = prow.querySelector('.nm').textContent;
+      const one = prow.querySelector('.one') ? prow.querySelector('.one').textContent : '';
+      open(`<div class="top"><div class="cnum">${num}</div><div><h3>${name}</h3><div class="csub">Cohort 01 · Project</div></div></div>
+        <p class="bio">${one} A longer placeholder description of the problem, the approach, and what the team ships over the three months. Real copy drops in here.</p>
+        <div class="links"><a class="chip" href="#">View project ↗</a><a class="chip" href="#">Repo ↗</a></div>`);
+    }
+    document.querySelectorAll('.star').forEach(s => s.addEventListener('click', () => personCard(s)));
+    document.querySelectorAll('.prow').forEach(p => p.addEventListener('click', () => projectCard(p)));
+    modal.addEventListener('click', (e) => { if (e.target === modal || e.target.classList.contains('x')) close(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
   })();
   </script>
 </body>
