@@ -29,6 +29,7 @@
       background: var(--bg);
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;             /* no sideways scroll on mobile */
     }
 
     /* The living + playable grid sits behind everything; input is read at the
@@ -825,7 +826,7 @@
       }
     }
 
-    let dragR = -1, dragC = -1, drawing = false;
+    let dragR = -1, dragC = -1, drawing = false, touchStart = null;
 
     // The track is gesture-gated (browsers block autoplay) and ON by default — the first
     // pointer/key gesture arms it. The mute button flips `muted` and fades the bed.
@@ -843,6 +844,7 @@
 
     // input (read at window level; links + UI controls opt out)
     window.addEventListener('pointermove', (e) => {
+      if (e.pointerType === 'touch') return;              // on touch, drags are scrolls — never draw/hover
       if (e.pageY >= oceanY) { hover = null; return; }    // the footer ocean isn't the grid — no highlight there
       hover = cellAt(e.pageX, e.pageY);
       if (!pressing || !hover) return;
@@ -861,15 +863,28 @@
       if (e.pageY >= oceanY) { Engine.note((Math.random() * cols) | 0, 0, cols, rows); return; }   // click the city → a high shimmer (in key)
       const cell = cellAt(e.pageX, e.pageY);
       if (!cell) return;
+      if (e.pointerType === 'touch') {                     // mobile: defer — a tap plays, a drag scrolls (decided on pointerup)
+        touchStart = { x: e.pageX, y: e.pageY, r: cell.r, c: cell.c };
+        return;
+      }
       pressing = true; dragR = cell.r; dragC = cell.c;
       const piece = pieceAt(cell.r, cell.c);
       drawing = !piece;                                    // hit a shape → play it; hit empty → draw mode
       if (piece) { playPiece(piece); lastCell = 'p' + piece.reduce((x, y) => y < x ? y : x); }
       else drawCell(cell.r, cell.c);
     });
-    const release = () => { pressing = false; lastCell = ''; };
+    const release = (e) => {
+      if (touchStart && e && e.pageX != null) {            // a touch ended: tap (little movement) plays; a drag was a scroll
+        if (Math.hypot(e.pageX - touchStart.x, e.pageY - touchStart.y) < 12) {
+          const piece = pieceAt(touchStart.r, touchStart.c);
+          if (piece) playPiece(piece); else drawCell(touchStart.r, touchStart.c);
+        }
+        touchStart = null;
+      }
+      pressing = false; lastCell = '';
+    };
     window.addEventListener('pointerup', release);
-    window.addEventListener('pointercancel', release);
+    window.addEventListener('pointercancel', () => { touchStart = null; pressing = false; lastCell = ''; });
     window.addEventListener('blur', release);
     window.addEventListener('mouseleave', () => { hover = null; });
     window.addEventListener('resize', resize);
