@@ -7,7 +7,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet" />
 
   <style>
     :root {
@@ -24,7 +24,7 @@
     html { scroll-behavior: smooth; }
 
     body {
-      font-family: 'Inter', system-ui, sans-serif;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       color: var(--ink);
       background: var(--bg);
       line-height: 1.6;
@@ -140,7 +140,8 @@
       font-size: 14px;
       letter-spacing: 0.02em;
       text-transform: uppercase;
-      color: var(--blue);
+      color: var(--pink);
+      text-shadow: 0 0 14px rgba(255, 46, 160, 0.3);
       margin-bottom: 18px;
     }
 
@@ -271,22 +272,19 @@
     <main>
       <section>
         <p class="lead">
-          BRAC operates at national scale. The constraint on putting AI to work
-          isn't ambition — it's people who can actually <span class="accent">build</span> it.
-          The Lab pairs Bangladesh's strongest student engineers with experienced
-          ML mentors to ship real products against real problems: paid, full-time,
-          in focused three-month cycles.
+          The Lab pairs Bangladesh's <span class="accent">strongest</span> undergraduates
+          with seasoned ML engineers.
         </p>
       </section>
 
       <section>
         <h2>How it works</h2>
-        <p>Every team is one mentor, two student fellows, and a project manager. Three months, real deliverables — not toy projects.</p>
+        <p>Each team is one mentor and two student fellows, owning a real BRAC problem end to end. Real deliverables, not toy demos.</p>
       </section>
 
       <section>
         <h2>Projects</h2>
-        <p class="muted small">Three real problems this cohort ships against. <span class="tbd">placeholders</span></p>
+        <p class="muted small">What this cohort is building. <span class="tbd">placeholders</span></p>
         <div class="prow"><span class="idx">01</span><span><span class="nm">Project One</span><div class="one">One line on the problem and what the team will ship.</div></span></div>
         <div class="prow"><span class="idx">02</span><span><span class="nm">Project Two</span><div class="one">One line on the problem and what the team will ship.</div></span></div>
         <div class="prow"><span class="idx">03</span><span><span class="nm">Project Three</span><div class="one">One line on the problem and what the team will ship.</div></span></div>
@@ -294,7 +292,7 @@
 
       <section>
         <h2>The Cohort</h2>
-        <p class="muted small">Each team — a mentor anchoring two fellows. Tap anyone for more. <span class="tbd">placeholders</span></p>
+        <p class="muted small">Each team is a mentor anchoring two fellows. Tap anyone for more. <span class="tbd">placeholders</span></p>
 
         <div class="team">
           <div class="team-h"><span class="num">01</span> Project One</div>
@@ -335,14 +333,15 @@
 
       <section>
         <h2>Timeline</h2>
-        <p class="muted">Launching Q3 2026 · applications open soon.</p>
+        <p class="muted">An 8-week cohort, launching August 2026.</p>
       </section>
     </main>
 
     <footer>
-      <a href="mailto:ai-lab@brac.net">ai-lab@brac.net</a>
+      <a href="mailto:hello@example.com">hello@example.com</a>
       <span class="copy">© 2026 BRAC</span>
-      <span class="copy">footer artwork — Hiroshi Nagai</span>
+      <span class="copy">footer artwork by Hiroshi Nagai</span>
+      <span class="copy">the grid plays the music, after Daft Punk</span>
     </footer>
     <!-- reserves the page room the full-width Nagai poster is painted into (height set in JS) -->
     <div id="citygap" aria-hidden="true"></div>
@@ -898,7 +897,7 @@
         ? `<div class="cphoto"><img src="${img.getAttribute('src')}" alt=""><span class="gov"></span></div>`
         : `<div class="cphoto"><span class="gov"></span><span class="ph-star"></span></div>`;
       open(`<div class="top">${photo}<div><h3>${name}</h3><div class="csub">${role} · Cohort 01</div></div></div>
-        <p class="bio">Placeholder bio — a line or two about ${name}: what they build, focus area, where they're from. Real copy drops in here.</p>
+        <p class="bio">Placeholder bio: a line or two about ${name}: what they build, focus area, where they're from. Real copy drops in here.</p>
         <div class="links"><a class="chip" href="#">LinkedIn ↗</a><a class="chip" href="#">GitHub ↗</a><a class="chip" href="#">Site ↗</a></div>`);
     }
     function projectCard(prow) {
