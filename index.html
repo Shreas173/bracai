@@ -210,6 +210,15 @@
     .mtag { position: absolute; left: 4px; bottom: 4px; z-index: 2; font-family: 'Silkscreen', monospace; font-size: 7px; letter-spacing: .08em;
       color: #cfe0ff; background: rgba(8,11,18,.72); padding: 2px 4px; border: 1px solid rgba(120,168,255,.5); }
 
+    /* supervision tier = a binary star pair sitting above the project teams.
+       warmer (pink) accent than the mentor blue, to read as the layer above. */
+    .duo { position: relative; width: min(300px, 100%); height: 150px; margin: 0 auto; }
+    .star.sup .photo { width: 84px; height: 84px; border-color: rgba(255,120,196,.5); box-shadow: 0 0 0 1px #080b12, 0 0 22px rgba(255,46,160,.28); }
+    .star.sup .lbl span { color: #ff9fd2; }
+    .star.sup .mtag { color: #ffd0e8; border-color: rgba(255,120,196,.6); }
+    .duo .lines line { stroke: rgba(255,120,196,.4); }
+    .duo .lines { filter: drop-shadow(0 0 3px rgba(255,46,160,.45)); }
+
     /* detail "readout" — opens on click; keeps the constellation clean, depth one tap away */
     .modal { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; padding: 24px;
       background: rgba(4,6,11,.72); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
@@ -280,7 +289,7 @@
 
       <section>
         <h2>How it works</h2>
-        <p>Each team is one mentor and two student fellows, owning a real BRAC problem end to end. Real deliverables, not toy demos.</p>
+        <p>Each team is one mentor and two student fellows, owning a real high-impact BRAC project. The whole cohort runs under supervision from BRAC IT and BRAC University.</p>
       </section>
 
       <section>
@@ -293,7 +302,7 @@
 
       <section>
         <h2>The Cohort</h2>
-        <p class="muted small">Each team is a mentor anchoring two fellows. Tap anyone for more. <span class="tbd">placeholders</span></p>
+        <p class="muted small">Three teams, supervised end to end. Tap anyone for more. <span class="tbd">placeholders</span></p>
 
         <div class="team">
           <div class="team-h"><span class="num">01</span> Project One</div>
@@ -330,11 +339,22 @@
             <div class="star" style="left:78%;top:74%"><div class="photo"><span class="gov"></span><span class="ph-star"></span></div><div class="lbl"><b>Fellow Six</b><span>fellow</span></div></div>
           </div>
         </div>
+
+        <div class="team">
+          <div class="team-h"><span class="num">★</span> Supervision</div>
+          <div class="duo">
+            <svg class="lines" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <line x1="30" y1="42" x2="70" y2="42"/>
+            </svg>
+            <div class="star sup" style="left:30%;top:42%"><div class="photo"><img src="people/topu.jpeg" alt="Shah Ali Newaj Topu"><span class="gov"></span><span class="mtag">Supervisor</span></div><div class="lbl"><b>Topu</b><span>Advisor · BRAC IT</span></div></div>
+            <div class="star sup" style="left:70%;top:42%"><div class="photo"><img src="people/rabiul.jpg" alt="Golam Rabiul Alam"><span class="gov"></span><span class="mtag">Supervisor</span></div><div class="lbl"><b>Rabiul</b><span>Professor · BRACU</span></div></div>
+          </div>
+        </div>
       </section>
 
       <section>
         <h2>Timeline</h2>
-        <p class="muted">An 8-week cohort, launching August 2026.</p>
+        <p class="muted">An 8-week cohort, launching September 2026.</p>
       </section>
     </main>
 
