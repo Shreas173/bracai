@@ -227,7 +227,8 @@
         0 0 8px #080b12;
     }
     #citygap { width: 100%; }          /* height set in JS = the poster's full-width height */
-    footer a { color: #dbe2ee; }
+    footer a { color: #dbe2ee; display: inline-flex; align-items: center; gap: 8px; }
+    footer .mail { flex: none; filter: drop-shadow(0 0 2px #080b12); }   /* pixel envelope, same grid feel as the Silkscreen type */
     footer .copy { color: #9aa3b6; }
 
     @media (max-width: 640px) {
@@ -314,7 +315,7 @@
     </main>
 
     <footer>
-      <a href="mailto:bs.aisl@brac.net">bs.aisl@brac.net</a>
+      <a href="mailto:bs.aisl@brac.net"><svg class="mail" viewBox="0 0 11 8" width="17" height="12" aria-hidden="true" shape-rendering="crispEdges"><path d="M0 0h1v1h-1zM1 0h1v1h-1zM2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM7 0h1v1h-1zM8 0h1v1h-1zM9 0h1v1h-1zM10 0h1v1h-1zM0 7h1v1h-1zM1 7h1v1h-1zM2 7h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM5 7h1v1h-1zM6 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM9 7h1v1h-1zM10 7h1v1h-1zM0 1h1v1h-1zM0 2h1v1h-1zM0 3h1v1h-1zM0 4h1v1h-1zM0 5h1v1h-1zM0 6h1v1h-1zM10 1h1v1h-1zM10 2h1v1h-1zM10 3h1v1h-1zM10 4h1v1h-1zM10 5h1v1h-1zM10 6h1v1h-1zM1 1h1v1h-1zM2 2h1v1h-1zM3 3h1v1h-1zM4 4h1v1h-1zM5 5h1v1h-1zM9 1h1v1h-1zM8 2h1v1h-1zM7 3h1v1h-1zM6 4h1v1h-1z" fill="currentColor"/></svg>bs.aisl@brac.net</a>
       <span class="copy">the grid is Conway's Game of Life</span>
       <span class="copy">music inspired by Daft Punk</span>
       <span class="copy">footer artwork by Hiroshi Nagai</span>
