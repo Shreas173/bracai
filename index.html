@@ -214,7 +214,7 @@
 
     footer {
       padding: 48px 0 28px;           /* the city poster sits below, in #citygap */
-      display: flex; flex-direction: column; gap: 8px;
+      display: flex; flex-direction: column; align-items: flex-start; gap: 8px;   /* items hug their text, so the email link's hover zone is just the link */
       font-family: 'Silkscreen', monospace;
       font-size: 12px;
       letter-spacing: 0.02em;
@@ -261,12 +261,13 @@
       <section>
         <h2>How it works</h2>
         <p>Each team is one mentor and two student fellows, working on a single problem.</p>
+        <p class="muted small">October to December 2026</p>
       </section>
 
       <section>
         <h2>Projects</h2>
         <div class="prow"><span class="idx">01</span><span><span class="nm">Deduplication</span><div class="one">The same person often appears as separate records across BRAC's programmes. The team is building a solution that links them back to one person, even when names are spelled differently.</div></span></div>
-        <div class="prow"><span class="idx">02</span><span><span class="nm">Migration</span><div class="one">Most Bangladeshis who want to work abroad rely on local brokers, who handle everything but often overcharge or cheat them. The team is building a solution that suggests the right path for each person and helps them check that their documents are real.</div></span></div>
+        <div class="prow"><span class="idx">02</span><span><span class="nm">Migration</span><div class="one">Bangladeshi workers pay some of the highest costs in the world to go abroad for work, and much of it goes to middlemen. The team is building a solution that lays out each person's path and what every step should cost, and helps them check their documents.</div></span></div>
       </section>
 
       <section>
@@ -308,10 +309,6 @@
         </div>
       </section>
 
-      <section>
-        <h2>Timeline</h2>
-        <p class="muted">An 8-week cohort, started October 2026.</p>
-      </section>
     </main>
 
     <footer>
