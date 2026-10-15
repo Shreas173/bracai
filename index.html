@@ -187,6 +187,8 @@
     .lines line { stroke: rgba(135,185,255,.42); stroke-width: 1; vector-effect: non-scaling-stroke; }
     .star { position: absolute; transform: translate(-50%,-50%); z-index: 1; }
     .lbl { position: absolute; top: calc(100% + 7px); left: 50%; transform: translateX(-50%); white-space: nowrap; text-align: center; }
+    .lbl a { display: block; }   /* a linked name (LinkedIn): keeps the site's faint pink underline as the cue */
+    .lbl a:hover b { color: var(--pink); }
     .lbl b { display: block; font-size: 13px; font-weight: 500; color: var(--ink); text-shadow: 0 1px 7px #080b12; }
     .lbl span { font-family: 'Silkscreen', monospace; font-size: 8px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
     .star.mentor .lbl span { color: #9fc0ff; }
@@ -279,7 +281,7 @@
             <svg class="lines" viewBox="0 0 100 100" preserveAspectRatio="none">
               <line x1="50" y1="16" x2="22" y2="74"/><line x1="50" y1="16" x2="78" y2="74"/><line x1="22" y1="74" x2="78" y2="74"/>
             </svg>
-            <div class="star mentor" style="left:50%;top:16%"><div class="photo"><img src="people/tasmeem.png" alt="Tasmeem Reza"><span class="gov"></span></div><div class="lbl"><b>Tasmeem</b><span>mentor</span></div></div>
+            <div class="star mentor" style="left:50%;top:16%"><div class="photo"><img src="people/tasmeem.png" alt="Tasmeem Reza"><span class="gov"></span></div><div class="lbl"><a href="https://www.linkedin.com/in/tasmeem-reza" target="_blank" rel="noopener"><b>Tasmeem</b></a><span>mentor</span></div></div>
             <div class="star" style="left:22%;top:74%"><div class="photo"><img src="people/shreas.png" alt="Shreas Labib"><span class="gov"></span></div><div class="lbl"><b>Shreas</b><span>fellow</span></div></div>
             <div class="star" style="left:78%;top:74%"><div class="photo"><img src="people/thamim.png" alt="Thamim Zahin"><span class="gov"></span></div><div class="lbl"><b>Thamim</b><span>fellow</span></div></div>
           </div>
@@ -291,7 +293,7 @@
             <svg class="lines" viewBox="0 0 100 100" preserveAspectRatio="none">
               <line x1="50" y1="16" x2="22" y2="74"/><line x1="50" y1="16" x2="78" y2="74"/><line x1="22" y1="74" x2="78" y2="74"/>
             </svg>
-            <div class="star mentor" style="left:50%;top:16%"><div class="photo"><img src="people/asif.png" alt="Asif Sushmit"><span class="gov"></span></div><div class="lbl"><b>Sushmit</b><span>mentor</span></div></div>
+            <div class="star mentor" style="left:50%;top:16%"><div class="photo"><img src="people/asif.png" alt="Asif Sushmit"><span class="gov"></span></div><div class="lbl"><a href="https://www.linkedin.com/in/sushmit109" target="_blank" rel="noopener"><b>Sushmit</b></a><span>mentor</span></div></div>
             <div class="star" style="left:22%;top:74%"><div class="photo"><img src="people/hasin.png" alt="Imad Uddin Ahmad Hasin"><span class="gov"></span></div><div class="lbl"><b>Hasin</b><span>fellow</span></div></div>
             <div class="star" style="left:78%;top:74%"><div class="photo"><img src="people/angkon.png" alt="Angkon Dutta Joy"><span class="gov"></span></div><div class="lbl"><b>Angkon</b><span>fellow</span></div></div>
           </div>
