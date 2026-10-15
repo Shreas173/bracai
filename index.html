@@ -74,7 +74,7 @@
       user-select: none;            /* the page is a playable surface — dragging shouldn't select text */
       -webkit-user-select: none;
     }
-    .page a, .prow, .star { pointer-events: auto; }   /* clickable bits opt back in over the click-through grid */
+    .page a { pointer-events: auto; }   /* links opt back in over the click-through grid */
 
     ::selection { background: var(--pink); color: #fff; }
 
@@ -160,12 +160,6 @@
     p + p { margin-top: 14px; }
     .muted { color: var(--muted); }
     .small { font-size: 13px; }
-    .tbd {
-      font-family: 'Silkscreen', monospace; font-size: 10px; letter-spacing: 0.06em;
-      text-transform: uppercase; color: var(--pink);
-      border: 1px dashed rgba(255, 46, 160, 0.45); border-radius: 6px;
-      padding: 1px 6px; margin-left: 4px; vertical-align: middle;
-    }
 
     /* Hero cohort tag */
     .tag {
@@ -177,13 +171,12 @@
     }
 
     /* ---- Cohort roster: a numbered project list + team "constellations" — each a small
-       triangle of grid-cell photo tiles. Click any star or project for its detail readout. ---- */
-    .prow { display: grid; grid-template-columns: 42px 1fr; gap: 14px; align-items: baseline; padding: 13px 0; cursor: pointer; border-radius: 8px; transition: background .15s; }
+       triangle of grid-cell photo tiles. ---- */
+    .prow { display: grid; grid-template-columns: 42px 1fr; gap: 14px; align-items: baseline; padding: 13px 0; }
     .prow + .prow { border-top: 1px solid rgba(120,168,255,.07); }
-    .prow:hover { background: rgba(120,168,255,.05); }
     .prow .idx { font-family: 'Silkscreen', monospace; font-size: 20px; color: var(--pink); text-shadow: 0 0 16px var(--pink); }
     .prow .nm { font-size: 16px; font-weight: 500; }
-    .prow .one { font-size: 13.5px; color: var(--muted); margin-top: 2px; }
+    .prow .one { font-size: 14.5px; line-height: 1.65; color: #c3cad8; margin-top: 6px; }
 
     /* a team = a small triangle asterism — mentor apex, two fellows at the base */
     .team { margin-top: 32px; }
@@ -192,7 +185,7 @@
     .tri { position: relative; width: min(360px, 100%); height: 262px; margin: 0 auto; }
     .lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 0; pointer-events: none; filter: drop-shadow(0 0 3px rgba(95,168,255,.5)); }
     .lines line { stroke: rgba(135,185,255,.42); stroke-width: 1; vector-effect: non-scaling-stroke; }
-    .star { position: absolute; transform: translate(-50%,-50%); z-index: 1; cursor: pointer; }
+    .star { position: absolute; transform: translate(-50%,-50%); z-index: 1; }
     .lbl { position: absolute; top: calc(100% + 7px); left: 50%; transform: translateX(-50%); white-space: nowrap; text-align: center; }
     .lbl b { display: block; font-size: 13px; font-weight: 500; color: var(--ink); text-shadow: 0 1px 7px #080b12; }
     .lbl span { font-family: 'Silkscreen', monospace; font-size: 8px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
@@ -209,40 +202,15 @@
       background: var(--cell); box-shadow: 0 0 9px var(--cell), 0 0 18px rgba(95,168,255,.55); animation: tw 3.6s ease-in-out infinite; }
     @keyframes tw { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
     .star.mentor .photo { width: 80px; height: 80px; border-color: rgba(120,168,255,.55); box-shadow: 0 0 0 1px #080b12, 0 0 20px rgba(95,168,255,.34); }
-    .star:hover .photo { box-shadow: 0 0 0 1px #080b12, 0 0 22px var(--blue); }
-    .mtag { position: absolute; left: 4px; bottom: 4px; z-index: 2; font-family: 'Silkscreen', monospace; font-size: 7px; letter-spacing: .08em;
-      color: #cfe0ff; background: rgba(8,11,18,.72); padding: 2px 4px; border: 1px solid rgba(120,168,255,.5); }
 
     /* supervision tier = a binary star pair sitting above the project teams.
        warmer (pink) accent than the mentor blue, to read as the layer above. */
     .duo { position: relative; width: min(300px, 100%); height: 150px; margin: 0 auto; }
     .star.sup .photo { width: 84px; height: 84px; border-color: rgba(255,120,196,.5); box-shadow: 0 0 0 1px #080b12, 0 0 22px rgba(255,46,160,.28); }
     .star.sup .lbl span { color: #ff9fd2; }
-    .star.sup .mtag { color: #ffd0e8; border-color: rgba(255,120,196,.6); }
     .duo .lines line { stroke: rgba(255,120,196,.4); }
     .duo .lines { filter: drop-shadow(0 0 3px rgba(255,46,160,.45)); }
 
-    /* detail "readout" — opens on click; keeps the constellation clean, depth one tap away */
-    .modal { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; padding: 24px;
-      background: rgba(4,6,11,.72); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
-    .modal.open { display: flex; }
-    .card { position: relative; width: min(460px, 100%); background: #0a0e17; border: 1px solid rgba(120,168,255,.22); border-radius: 16px;
-      padding: 24px 24px 22px; box-shadow: 0 0 0 1px #080b12, 0 24px 70px rgba(0,0,0,.65), 0 0 44px rgba(95,168,255,.12);
-      background-image: repeating-linear-gradient(0deg, rgba(110,168,255,.05) 0 1px, transparent 1px 22px), repeating-linear-gradient(90deg, rgba(110,168,255,.05) 0 1px, transparent 1px 22px); background-size: 22px 22px; }
-    .card .x { position: absolute; top: 10px; right: 12px; width: 28px; height: 28px; border: none; background: transparent; color: var(--muted); font-size: 14px; cursor: pointer; border-radius: 6px; }
-    .card .x:hover { color: #fff; background: rgba(120,168,255,.1); }
-    .card .top { display: flex; gap: 16px; align-items: center; }
-    .cphoto { position: relative; width: 92px; height: 92px; flex: 0 0 auto; overflow: hidden; background: #0e1626;
-      border: 1px solid rgba(120,168,255,.4); box-shadow: 0 0 0 1px #080b12, 0 0 20px rgba(95,168,255,.3); }
-    .cphoto img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; filter: saturate(.95) contrast(1.04) brightness(1.03); }
-    .cnum { font-family: 'Silkscreen', monospace; font-size: 30px; color: var(--pink); text-shadow: 0 0 16px rgba(255,46,160,.5); flex: 0 0 auto; width: 60px; text-align: center; }
-    .card h3 { font-size: 20px; font-weight: 600; letter-spacing: -.01em; }
-    .csub { font-family: 'Silkscreen', monospace; font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: #9fc0ff; margin-top: 7px; }
-    .bio { margin-top: 15px; font-size: 14px; line-height: 1.55; color: #c3cad8; }
-    .links { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
-    .chip { font-family: 'Silkscreen', monospace; font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; text-decoration: none;
-      color: #cfe0ff; border: 1px solid rgba(120,168,255,.4); border-radius: 999px; padding: 7px 12px; transition: .15s; }
-    .chip:hover { border-color: var(--pink); color: #fff; background: rgba(255,46,160,.08); }
 
     footer {
       padding: 48px 0 28px;           /* the city poster sits below, in #citygap */
@@ -285,61 +253,46 @@
     <main>
       <section>
         <p class="lead">
-          The Lab pairs Bangladesh's best undergraduates
-          with seasoned ML engineers.
+          Undergraduate engineers, working with mentors
+          on real problems inside BRAC.
         </p>
       </section>
 
       <section>
         <h2>How it works</h2>
-        <p>Each team is one mentor and two student fellows, owning a real high-impact BRAC project.</p>
+        <p>Each team is one mentor and two student fellows, working on a single problem.</p>
       </section>
 
       <section>
         <h2>Projects</h2>
-        <p class="muted small">What this cohort is building. <span class="tbd">placeholders</span></p>
-        <div class="prow"><span class="idx">01</span><span><span class="nm">Project One</span><div class="one">One line on the problem and what the team will ship.</div></span></div>
-        <div class="prow"><span class="idx">02</span><span><span class="nm">Project Two</span><div class="one">One line on the problem and what the team will ship.</div></span></div>
-        <div class="prow"><span class="idx">03</span><span><span class="nm">Project Three</span><div class="one">One line on the problem and what the team will ship.</div></span></div>
+        <div class="prow"><span class="idx">01</span><span><span class="nm">Deduplication</span><div class="one">The same person often appears as separate records across BRAC's programmes. The team is building a solution that links them back to one person, even when names are spelled differently.</div></span></div>
+        <div class="prow"><span class="idx">02</span><span><span class="nm">Migration</span><div class="one">Most Bangladeshis who want to work abroad rely on local brokers, who handle everything but often overcharge or cheat them. The team is building a solution that suggests the right path for each person and helps them check that their documents are real.</div></span></div>
       </section>
 
       <section>
         <h2>The Cohort</h2>
-        <p class="muted small">Three teams, supervised end to end. Tap anyone for more. <span class="tbd">placeholders</span></p>
 
         <div class="team">
-          <div class="team-h"><span class="num">01</span> Project One</div>
+          <div class="team-h"><span class="num">01</span> Deduplication</div>
           <div class="tri">
             <svg class="lines" viewBox="0 0 100 100" preserveAspectRatio="none">
               <line x1="50" y1="16" x2="22" y2="74"/><line x1="50" y1="16" x2="78" y2="74"/><line x1="22" y1="74" x2="78" y2="74"/>
             </svg>
-            <div class="star mentor" style="left:50%;top:16%"><div class="photo"><span class="gov"></span><span class="ph-star"></span><span class="mtag">Mentor</span></div><div class="lbl"><b>Mentor One</b><span>mentor</span></div></div>
-            <div class="star" style="left:22%;top:74%"><div class="photo"><img src="people/hasin.png" alt="Hasin"><span class="gov"></span></div><div class="lbl"><b>Hasin</b><span>fellow</span></div></div>
-            <div class="star" style="left:78%;top:74%"><div class="photo"><img src="people/shreas.png" alt="Shreas"><span class="gov"></span></div><div class="lbl"><b>Shreas</b><span>fellow</span></div></div>
+            <div class="star mentor" style="left:50%;top:16%"><div class="photo"><img src="people/tasmeem.png" alt="Tasmeem Reza"><span class="gov"></span></div><div class="lbl"><b>Tasmeem</b><span>mentor</span></div></div>
+            <div class="star" style="left:22%;top:74%"><div class="photo"><img src="people/shreas.png" alt="Shreas Labib"><span class="gov"></span></div><div class="lbl"><b>Shreas</b><span>fellow</span></div></div>
+            <div class="star" style="left:78%;top:74%"><div class="photo"><img src="people/thamim.png" alt="Thamim Zahin"><span class="gov"></span></div><div class="lbl"><b>Thamim</b><span>fellow</span></div></div>
           </div>
         </div>
 
         <div class="team">
-          <div class="team-h"><span class="num">02</span> Project Two</div>
+          <div class="team-h"><span class="num">02</span> Migration</div>
           <div class="tri">
             <svg class="lines" viewBox="0 0 100 100" preserveAspectRatio="none">
               <line x1="50" y1="16" x2="22" y2="74"/><line x1="50" y1="16" x2="78" y2="74"/><line x1="22" y1="74" x2="78" y2="74"/>
             </svg>
-            <div class="star mentor" style="left:50%;top:16%"><div class="photo"><span class="gov"></span><span class="ph-star"></span><span class="mtag">Mentor</span></div><div class="lbl"><b>Mentor Two</b><span>mentor</span></div></div>
-            <div class="star" style="left:22%;top:74%"><div class="photo"><span class="gov"></span><span class="ph-star"></span></div><div class="lbl"><b>Fellow Three</b><span>fellow</span></div></div>
-            <div class="star" style="left:78%;top:74%"><div class="photo"><span class="gov"></span><span class="ph-star"></span></div><div class="lbl"><b>Fellow Four</b><span>fellow</span></div></div>
-          </div>
-        </div>
-
-        <div class="team">
-          <div class="team-h"><span class="num">03</span> Project Three</div>
-          <div class="tri">
-            <svg class="lines" viewBox="0 0 100 100" preserveAspectRatio="none">
-              <line x1="50" y1="16" x2="22" y2="74"/><line x1="50" y1="16" x2="78" y2="74"/><line x1="22" y1="74" x2="78" y2="74"/>
-            </svg>
-            <div class="star mentor" style="left:50%;top:16%"><div class="photo"><span class="gov"></span><span class="ph-star"></span><span class="mtag">Mentor</span></div><div class="lbl"><b>Mentor Three</b><span>mentor</span></div></div>
-            <div class="star" style="left:22%;top:74%"><div class="photo"><span class="gov"></span><span class="ph-star"></span></div><div class="lbl"><b>Fellow Five</b><span>fellow</span></div></div>
-            <div class="star" style="left:78%;top:74%"><div class="photo"><span class="gov"></span><span class="ph-star"></span></div><div class="lbl"><b>Fellow Six</b><span>fellow</span></div></div>
+            <div class="star mentor" style="left:50%;top:16%"><div class="photo"><img src="people/asif.png" alt="Asif Sushmit"><span class="gov"></span></div><div class="lbl"><b>Sushmit</b><span>mentor</span></div></div>
+            <div class="star" style="left:22%;top:74%"><div class="photo"><img src="people/hasin.png" alt="Imad Uddin Ahmad Hasin"><span class="gov"></span></div><div class="lbl"><b>Hasin</b><span>fellow</span></div></div>
+            <div class="star" style="left:78%;top:74%"><div class="photo"><img src="people/angkon.png" alt="Angkon Dutta Joy"><span class="gov"></span></div><div class="lbl"><b>Angkon</b><span>fellow</span></div></div>
           </div>
         </div>
 
@@ -349,15 +302,15 @@
             <svg class="lines" viewBox="0 0 100 100" preserveAspectRatio="none">
               <line x1="30" y1="42" x2="70" y2="42"/>
             </svg>
-            <div class="star sup" style="left:30%;top:42%"><div class="photo"><img src="people/topu.jpeg" alt="Shah Ali Newaj Topu"><span class="gov"></span><span class="mtag">Supervisor</span></div><div class="lbl"><b>Topu</b><span>Advisor · BRAC IT</span></div></div>
-            <div class="star sup" style="left:70%;top:42%"><div class="photo"><img src="people/rabiul.jpg" alt="Golam Rabiul Alam"><span class="gov"></span><span class="mtag">Supervisor</span></div><div class="lbl"><b>Rabiul</b><span>Professor · BRACU</span></div></div>
+            <div class="star sup" style="left:30%;top:42%"><div class="photo"><img src="people/topu.png" alt="Shah Ali Newaj Topu"><span class="gov"></span></div><div class="lbl"><b>Topu</b><span>Advisor · BRAC IT</span></div></div>
+            <div class="star sup" style="left:70%;top:42%"><div class="photo"><img src="people/rabiul.png" alt="Golam Rabiul Alam"><span class="gov"></span></div><div class="lbl"><b>Rabiul</b><span>Professor · BRACU</span></div></div>
           </div>
         </div>
       </section>
 
       <section>
         <h2>Timeline</h2>
-        <p class="muted">An 8-week cohort, launching September 2026.</p>
+        <p class="muted">An 8-week cohort, started October 2026.</p>
       </section>
     </main>
 
@@ -371,10 +324,6 @@
     <div id="citygap" aria-hidden="true"></div>
   </div>
 
-  <!-- detail readout — opens when a star (person) or project is tapped -->
-  <div class="modal" id="modal">
-    <div class="card"><button class="x" aria-label="Close">✕</button><div class="card-body"></div></div>
-  </div>
 
   <script>
   /* ============================================================
@@ -881,7 +830,7 @@
       }
     });
     window.addEventListener('pointerdown', (e) => {
-      if (e.target.closest && e.target.closest('a, button, [data-ui], .star, .prow, .modal')) return;
+      if (e.target.closest && e.target.closest('a, button, [data-ui]')) return;
       arm();
       if (e.pageY >= oceanY) { Engine.note((Math.random() * cols) | 0, 0, cols, rows); return; }   // click the city → a high shimmer (in key)
       const cell = cellAt(e.pageX, e.pageY);
@@ -918,39 +867,6 @@
     requestAnimationFrame(loop);
   })();
 
-  /* ============================================================
-     Detail readout — click a star (person) or a project for the depth:
-     photo, bio, links. Keeps the constellation clean, info one tap away.
-     ============================================================ */
-  (() => {
-    const modal = document.getElementById('modal'); if (!modal) return;
-    const body = modal.querySelector('.card-body');
-    const open = (html) => { body.innerHTML = html; modal.classList.add('open'); };
-    const close = () => modal.classList.remove('open');
-    function personCard(star) {
-      const name = star.querySelector('.lbl b').textContent;
-      const role = star.querySelector('.lbl span').textContent;
-      const img = star.querySelector('.photo img');
-      const photo = img
-        ? `<div class="cphoto"><img src="${img.getAttribute('src')}" alt=""><span class="gov"></span></div>`
-        : `<div class="cphoto"><span class="gov"></span><span class="ph-star"></span></div>`;
-      open(`<div class="top">${photo}<div><h3>${name}</h3><div class="csub">${role} · Cohort 01</div></div></div>
-        <p class="bio">Placeholder bio: a line or two about ${name}: what they build, focus area, where they're from. Real copy drops in here.</p>
-        <div class="links"><a class="chip" href="#">LinkedIn ↗</a><a class="chip" href="#">GitHub ↗</a><a class="chip" href="#">Site ↗</a></div>`);
-    }
-    function projectCard(prow) {
-      const num = prow.querySelector('.idx').textContent;
-      const name = prow.querySelector('.nm').textContent;
-      const one = prow.querySelector('.one') ? prow.querySelector('.one').textContent : '';
-      open(`<div class="top"><div class="cnum">${num}</div><div><h3>${name}</h3><div class="csub">Cohort 01 · Project</div></div></div>
-        <p class="bio">${one} A longer placeholder description of the problem, the approach, and what the team ships over the three months. Real copy drops in here.</p>
-        <div class="links"><a class="chip" href="#">View project ↗</a><a class="chip" href="#">Repo ↗</a></div>`);
-    }
-    document.querySelectorAll('.star').forEach(s => s.addEventListener('click', () => personCard(s)));
-    document.querySelectorAll('.prow').forEach(p => p.addEventListener('click', () => projectCard(p)));
-    modal.addEventListener('click', (e) => { if (e.target === modal || e.target.classList.contains('x')) close(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
-  })();
   </script>
 </body>
 </html>
