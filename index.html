@@ -44,7 +44,7 @@
       z-index: 0;
     }
 
-    /* The mute toggle — the track is ON by default, this is its off-ramp. A visible
+    /* The sound toggle: the track is OFF by default, this opts in. A visible
        pill in the pixel font so it reads on the dark ground and hints the page sings. */
     #mute {
       position: fixed; bottom: 18px; right: 18px; z-index: 5;
@@ -243,7 +243,7 @@
 </head>
 <body>
   <canvas id="grid" aria-hidden="true"></canvas>
-  <button id="mute" type="button" aria-label="Mute" title="mute / unmute">♪ sound on</button>
+  <button id="mute" type="button" class="off" aria-label="Turn sound on" title="sound on / off">♪ sound off</button>
 
   <div class="page">
     <header class="hero">
@@ -256,7 +256,7 @@
       <section>
         <p class="lead">
           Undergraduate engineers, working with mentors
-          on real problems inside BRAC.
+          on real problems.
         </p>
       </section>
 
@@ -799,16 +799,16 @@
 
     let dragR = -1, dragC = -1, drawing = false, touchStart = null;
 
-    // The track is gesture-gated (browsers block autoplay) and ON by default — the first
-    // pointer/key gesture arms it. The mute button flips `muted` and fades the bed.
-    let muted = false, armed = false;
+    // The track is OFF by default (a public page shouldn't surprise anyone at work);
+    // the sound button opts in. The first gesture still arms the audio context.
+    let muted = true, armed = false;
     function arm() { if (armed) return; armed = true; Engine.unlock(); if (!muted) Engine.setEnabled(true); }
     const muteBtn = document.getElementById('mute');
     if (muteBtn) muteBtn.addEventListener('click', () => {
       muted = !muted;
-      muteBtn.textContent = muted ? '♪ muted' : '♪ sound on';
+      muteBtn.textContent = muted ? '♪ sound off' : '♪ sound on';
       muteBtn.classList.toggle('off', muted);
-      muteBtn.setAttribute('aria-label', muted ? 'Unmute' : 'Mute');
+      muteBtn.setAttribute('aria-label', muted ? 'Turn sound on' : 'Turn sound off');
       Engine.unlock(); Engine.setEnabled(!muted);
     });
     window.addEventListener('keydown', arm, { once: true });
